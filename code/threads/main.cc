@@ -12,7 +12,7 @@
 ///
 ///     nachos [-d <debugflags>] [-do <debugopts>] 
 ///            [-rs <random seed #>] [-z] [-tt|-tN] 
-///            [-m <num phys pages>]
+///            [-m <num phys pages>] [-i]
 ///            [-s] [-x <nachos file>] [-tc <consoleIn> <consoleOut>] 
 ///            [-f] [-cp <unix file> <nachos file>] [-pr <nachos file>]
 ///            [-rm <nachos file>] [-ls] [-D] [-c] [-tf]
@@ -27,6 +27,7 @@
 /// * `-rs` -- causes `Yield` to occur at random (but repeatable) spots.
 /// * `-z`  -- prints version and copyright information, and exits.
 /// * `-m`  -- size of emulated physical memory (in pages)
+/// * `-i`  -- show system information
 ///
 /// *THREADS* options
 /// -----------------

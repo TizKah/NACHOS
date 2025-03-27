@@ -244,6 +244,10 @@ static void
 InterruptEnable()
 {
     interrupt->Enable();
+    if (threadToBeDestroyed!=nullptr) {
+       delete threadToBeDestroyed;
+       threadToBeDestroyed = nullptr;
+    }
 }
 
 /// Allocate and initialize an execution stack.
