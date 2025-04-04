@@ -17,8 +17,11 @@
 /// * `name` points to a string with a thread name, just for debugging
 ///   purposes.
 
-bool thread2Done = false;
-void
+/// NOTE: The total amount of threads will be N_THREADS + 1 (the "main" thread). 
+static const unsigned N_THREADS = 4; 
+static const char *names[N_THREADS] = {"2nd", "3rd", "4th", "5th"};
+static bool done[N_THREADS] = {false};
+static void
 SimpleThread(void *name_)
 {
 
@@ -29,8 +32,10 @@ SimpleThread(void *name_)
         printf("*** Thread `%s` is running: iteration %u\n", currentThread->GetName(), num);
         currentThread->Yield();
     }
-    if (strcmp(currentThread->GetName(),"2nd")==0) {
-	thread2Done = true;
+    for (unsigned i = 0; i < N_THREADS; i++) {
+        if (strcmp(currentThread->GetName(),names[i])==0) {
+            done[i] = true;
+        }
     }
     printf("!!! Thread `%s` has finished SimpleThread\n", currentThread->GetName());
  
@@ -43,15 +48,20 @@ SimpleThread(void *name_)
 void
 ThreadTestSimple()
 {
-    Thread *newThread = new Thread("2nd");
-    newThread->Fork(SimpleThread, NULL);
+    Thread *newThreads[N_THREADS];
+    for (unsigned i = 0; i < N_THREADS; i++) {
+        newThreads[i] = new Thread(names[i]);         
+        newThreads[i]->Fork(SimpleThread, NULL);
+    }
 
     //the "main" thread also executes the same function
     SimpleThread(NULL);
 
-   //Wait for the 2nd thread to finish if needed
-    while (!thread2Done) {
-        currentThread->Yield(); 
+    //Wait for the new threads to finish if needed
+    for (unsigned i = 0; i < N_THREADS; i++) {
+        while (!done[i]) {
+            currentThread->Yield(); 
+        }
     }
     printf("Test finished\n");
 }
