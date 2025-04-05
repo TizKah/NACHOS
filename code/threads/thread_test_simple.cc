@@ -19,7 +19,7 @@
 ///   purposes.
 
 /// NOTE: The total amount of threads will be N_THREADS + 1 (the "main" thread). 
-static const unsigned N_THREADS = 40; 
+static const unsigned N_THREADS = 4; 
 static bool done[N_THREADS] = {false};
 
 #ifdef SEMAPHORE_TEST
