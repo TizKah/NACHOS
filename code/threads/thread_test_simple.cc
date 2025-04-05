@@ -91,4 +91,12 @@ ThreadTestSimple()
     }
 
     printf("Test finished\n");
+
+    // Free all the memory
+    for (unsigned i = 0; i < N_THREADS; i++) {
+        free(thread_names[i]);
+        delete[] threads[i];
+    }
+    free(threads);
+    free(thread_names);
 }
