@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 /// Loop 10 times, yielding the CPU to another ready thread each iteration.
 ///
@@ -19,7 +20,6 @@
 
 /// NOTE: The total amount of threads will be N_THREADS + 1 (the "main" thread). 
 static const unsigned N_THREADS = 4; 
-static const char *names[N_THREADS] = {"2nd", "3rd", "4th", "5th"};
 static bool done[N_THREADS] = {false};
 
 #ifdef SEMAPHORE_TEST
@@ -49,9 +49,12 @@ SimpleThread(void *name_)
 
         currentThread->Yield();
     }
-    for (unsigned i = 0; i < N_THREADS; i++) {
-        if (strcmp(currentThread->GetName(),names[i])==0) {
-            done[i] = true;
+    // Falta flag para que no siga el bucle al asignar true a uno ya.
+    for(unsigned thr_number = 0; thr_number < N_THREADS; thr_number++) {   
+        char actual_thr_number[1024];
+        sprintf(actual_thr_number, "%d", thr_number);
+        if (strcmp(currentThread->GetName(),actual_thr_number)==0) {
+	        done[thr_number] = true;
         }
     }
     printf("!!! Thread `%s` has finished SimpleThread\n", currentThread->GetName());
@@ -64,20 +67,26 @@ SimpleThread(void *name_)
 void
 ThreadTestSimple()
 {
-    Thread *newThreads[N_THREADS];
-    for (unsigned i = 0; i < N_THREADS; i++) {
-        newThreads[i] = new Thread(names[i]);         
-        newThreads[i]->Fork(SimpleThread, NULL);
+    Thread** threads = (Thread **)malloc(sizeof(Thread*) * N_THREADS);
+    char** thread_names = (char **)malloc(sizeof(char*) * 1024);
+
+    for(unsigned thr_number = 0; thr_number < N_THREADS; thr_number++) {
+        thread_names[thr_number] = (char *)malloc(sizeof(char) * 1024);
+        
+        sprintf(thread_names[thr_number], "%d", thr_number);
+
+        threads[thr_number] = new Thread(thread_names[thr_number]);
+        threads[thr_number]->Fork(SimpleThread, NULL);        
     }
 
     //the "main" thread also executes the same function
     SimpleThread(NULL);
 
-    //Wait for the new threads to finish if needed
-    for (unsigned i = 0; i < N_THREADS; i++) {
-        while (!done[i]) {
-            currentThread->Yield(); 
+    for(unsigned thr_number = 0; thr_number < N_THREADS; thr_number++) {   
+        while(!done[thr_number]) {
+            currentThread->Yield();
         }
     }
+
     printf("Test finished\n");
 }
