@@ -19,7 +19,7 @@
 ///   purposes.
 
 /// NOTE: The total amount of threads will be N_THREADS + 1 (the "main" thread). 
-static const unsigned N_THREADS = 4; 
+static const unsigned N_THREADS = 40; 
 static bool done[N_THREADS] = {false};
 
 #ifdef SEMAPHORE_TEST
@@ -50,11 +50,13 @@ SimpleThread(void *name_)
         currentThread->Yield();
     }
     // Falta flag para que no siga el bucle al asignar true a uno ya.
-    for(unsigned thr_number = 0; thr_number < N_THREADS; thr_number++) {   
+    bool already_done = false;
+    for(unsigned thr_number = 0; thr_number < N_THREADS && !already_done; thr_number++) {   
         char actual_thr_number[1024];
         sprintf(actual_thr_number, "%d", thr_number);
         if (strcmp(currentThread->GetName(),actual_thr_number)==0) {
 	        done[thr_number] = true;
+            already_done = true;
         }
     }
     printf("!!! Thread `%s` has finished SimpleThread\n", currentThread->GetName());
