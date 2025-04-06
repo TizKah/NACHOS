@@ -17,7 +17,7 @@
 
 #include "lock.hh"
 #include "system.hh"
-#include "debug.hh"
+#include "../lib/debug.hh"
 
 /// Dummy functions -- so we can compile our later assignments.
 
