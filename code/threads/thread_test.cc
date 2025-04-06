@@ -15,6 +15,8 @@
 #include "thread_test_garden_semaphores.hh"
 #include "thread_test_prod_cons.hh"
 #include "thread_test_simple.hh"
+#include "thread_test_channel.hh"
+#include "thread_test_multiple_channel.hh"
 #include "lib/utility.hh"
 
 #include <stdio.h>
@@ -32,7 +34,9 @@ static const Test TESTS[] = {
     { &ThreadTestSimple,   "simple",   "Simple thread interleaving" },
     { &ThreadTestGarden,   "garden",   "Ornamental garden" },
     { &ThreadTestProdCons, "prodcons", "Producer/Consumer" },
-    { &ThreadTestGardenSemaphores, "gardenSemaphores", "Ornamental garden (with semaphores)" }
+    { &ThreadTestGardenSemaphores, "gardenSemaphores", "Ornamental garden (with semaphores)" },
+    { &ThreadTestChannel, "channel", "Message passing with Channel" },
+    { &TestMultipleSendersReceivers, "channel", "Message passing with Channel (multiple senders and receivers)" }
 };
 static const unsigned NUM_TESTS = sizeof TESTS / sizeof TESTS[0];
 
