@@ -9,7 +9,7 @@ Channel::Channel() {
     condition_lock = new Lock("channel_lock");
     sender_condition = new Condition("sender_condition", condition_lock);
     receiver_condition = new Condition("receiver_condition", condition_lock);
-    bufferBusy = false;
+    buffer_busy = false;
 }
 
 Channel::~Channel() {
@@ -22,14 +22,14 @@ Channel::~Channel() {
 void Channel::Send(int message) {
     condition_lock->Acquire();
     
-    while(bufferBusy) {
+    while(buffer_busy) {
         printf("Thread %s esperando receptor...\n", currentThread->GetName());
         sender_condition->Wait();
     }
     
     // Seteo el mensaje
     buffer = message;
-    bufferBusy = true;
+    buffer_busy = true;
     printf("Thread %s mandó el mensaje: %d\n", currentThread->GetName(), buffer);
     
     // Le aviso al receiver que ya puede recibir el mensaje
@@ -43,14 +43,14 @@ void Channel::Send(int message) {
 void Channel::Receive(int *message) {
     condition_lock->Acquire();
     
-    while(!bufferBusy) {
+    while(!buffer_busy) {
         printf("Thread %s esperando emisor...\n", currentThread->GetName());
         receiver_condition->Wait();
     }
     
     // Recibo el mensaje
     *message = buffer;
-    bufferBusy = false;
+    buffer_busy = false;
     printf("Thread %s recibió el mensaje: %d\n", currentThread->GetName(), *message);
     
     // Le aviso al sender que ya leí el mensaje

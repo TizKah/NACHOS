@@ -16,7 +16,7 @@ public:
     void Receive(int *message);
 
 private:
-    bool bufferBusy;
+    bool buffer_busy;
     int buffer;
     Condition* sender_condition;
     Condition* receiver_condition;
