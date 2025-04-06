@@ -16,19 +16,21 @@
 
 
 #include "condition.hh"
-
+#include "semaphore.hh"
 
 /// Dummy functions -- so we can compile our later assignments.
 ///
 
 Condition::Condition(const char *debugName, Lock *conditionLock)
 {
-    // TODO
+    name = debugName;
+    lock = conditionLock;
+    waitQueue = new List<Semaphore *>();
 }
 
 Condition::~Condition()
 {
-    // TODO
+    delete waitQueue;
 }
 
 const char *
@@ -40,17 +42,34 @@ Condition::GetName() const
 void
 Condition::Wait()
 {
-    // TODO
+    ASSERT(lock->IsHeldByCurrentThread());
+
+    Semaphore *waiter = new Semaphore("wait cond", 0);
+    waitQueue->Append(waiter);
+    lock->Release();
+    waiter->P();
+    lock->Acquire();
+    delete waiter;
 }
 
 void
 Condition::Signal()
 {
-    // TODO
+    ASSERT(lock->IsHeldByCurrentThread());
+
+    if(!waitQueue->IsEmpty()) {
+        Semaphore* WakingUpWaiter = waitQueue->Pop();
+        WakingUpWaiter->V();
+    }
 }
 
 void
 Condition::Broadcast()
 {
-    // TODO
+    ASSERT(lock->IsHeldByCurrentThread());
+
+    while (!waitQueue->IsEmpty()) {
+        Semaphore *s = waitQueue->Pop();
+        s->V();
+    }
 }
