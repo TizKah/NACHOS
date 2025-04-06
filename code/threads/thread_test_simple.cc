@@ -95,7 +95,6 @@ ThreadTestSimple()
     // Free all the memory
     for (unsigned thr_number = 0; thr_number < N_THREADS; thr_number++) {
         free(thread_names[thr_number]);
-        delete[] threads[thr_number];
     }
     free(threads);
     free(thread_names);
