@@ -17,6 +17,7 @@
 
 #include "lock.hh"
 #include "system.hh"
+#include "debug.hh"
 
 /// Dummy functions -- so we can compile our later assignments.
 
@@ -42,16 +43,20 @@ void
 Lock::Acquire()
 {
     ASSERT(!IsHeldByCurrentThread());
+    DEBUG('s', "Thread %s trying to acquire lock %s\n", currentThread->GetName(), name);
     sem->P();
     owner = currentThread;
+    DEBUG('s', "Thread %s acquired lock %s\n", currentThread->GetName(), name);
 }
 
 void
 Lock::Release()
 {
     ASSERT(!IsHeldByCurrentThread());
+    DEBUG('s', "Thread %s trying to release lock %s\n", currentThread->GetName(), name);
     sem->V();
     owner = NULL;
+    DEBUG('s', "Thread %s released lock %s\n", currentThread->GetName(), name);
 }
 
 bool
