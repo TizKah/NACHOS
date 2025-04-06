@@ -52,7 +52,7 @@ Lock::Acquire()
 void
 Lock::Release()
 {
-    ASSERT(!IsHeldByCurrentThread());
+    ASSERT(IsHeldByCurrentThread());
     DEBUG('s', "Thread %s trying to release lock %s\n", currentThread->GetName(), name);
     sem->V();
     owner = NULL;
