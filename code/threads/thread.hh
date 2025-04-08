@@ -41,6 +41,7 @@
 
 #include "lib/utility.hh"
 
+
 #ifdef USER_PROGRAM
 #include "machine/machine.hh"
 #include "userprog/address_space.hh"
@@ -127,7 +128,8 @@ public:
     const char *GetName() const;
 
     void Print() const;
-
+    void Join();
+    
 private:
     // Some of the private data for this class is listed above.
 
@@ -135,6 +137,9 @@ private:
     ///
     /// Null if this is the main thread.  (If null, do not deallocate stack.)
     uintptr_t *stack;
+    
+    bool finished;
+
 
     /// Ready, running or blocked.
     ThreadStatus status;

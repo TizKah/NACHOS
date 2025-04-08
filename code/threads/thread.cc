@@ -30,6 +30,23 @@
 const unsigned STACK_FENCEPOST = 0xDEADBEEF;
 
 
+#include "condition.hh"
+#include "lock.hh"
+Lock *cond_lock;
+Condition *cond;
+
+void
+Thread::Join()
+{
+    cond_lock->Acquire();
+    
+    while(!finished) {
+        cond->Wait();
+    }
+    
+    cond_lock->Release();
+}
+
 static inline bool
 IsThreadStatus(ThreadStatus s)
 {
@@ -46,6 +63,10 @@ Thread::Thread(const char *threadName)
     stackTop = nullptr;
     stack    = nullptr;
     status   = JUST_CREATED;
+    cond_lock = new Lock("join_cond");
+    cond = new Condition("join_cond", cond_lock);
+    finished = false;
+
 #ifdef USER_PROGRAM
     space    = nullptr;
 #endif
@@ -161,6 +182,12 @@ Thread::Finish()
     DEBUG('t', "Finishing thread \"%s\"\n", GetName());
 
     threadToBeDestroyed = currentThread;
+
+    cond_lock->Acquire();
+    finished = true;
+    cond->Broadcast();
+    cond_lock->Release();
+
     Sleep();  // Invokes `SWITCH`.
     // Not reached.
 }
@@ -313,5 +340,7 @@ Thread::RestoreUserState()
         machine->WriteRegister(i, userRegisters[i]);
     }
 }
+
+
 
 #endif
