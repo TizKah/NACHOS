@@ -98,7 +98,7 @@ private:
 public:
 
     /// Initialize a `Thread`.
-    Thread(const char *debugName);
+    Thread(const char *debugName, bool _join = false);
 
     /// Deallocate a Thread.
     ///
@@ -139,7 +139,7 @@ private:
     uintptr_t *stack;
     
     bool finished;
-
+    bool join;
 
     /// Ready, running or blocked.
     ThreadStatus status;

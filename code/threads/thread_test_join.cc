@@ -12,7 +12,7 @@ void func(void* _arg) {
 }
 
 void ThreadTestJoin() {
-    Thread *t = new Thread("Hijo");
+    Thread *t = new Thread("Hijo", true);
     t->Fork(func, nullptr);
     t->Join();
     printf("Vuelvo a main\n");

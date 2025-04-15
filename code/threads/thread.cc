@@ -38,6 +38,8 @@ Condition *cond;
 void
 Thread::Join()
 {
+    ASSERT(join);
+     
     cond_lock->Acquire();
     
     while(!finished) {
@@ -57,14 +59,17 @@ IsThreadStatus(ThreadStatus s)
 /// `Thread::Fork`.
 ///
 /// * `threadName` is an arbitrary string, useful for debugging.
-Thread::Thread(const char *threadName)
+Thread::Thread(const char *threadName, bool _join)
 {
     name     = threadName;
     stackTop = nullptr;
     stack    = nullptr;
     status   = JUST_CREATED;
-    cond_lock = new Lock("join_cond");
-    cond = new Condition("join_cond", cond_lock);
+    join = _join;
+    if(join) {
+        cond_lock = new Lock("join_cond");
+        cond = new Condition("join_cond", cond_lock);
+    }
     finished = false;
 
 #ifdef USER_PROGRAM
@@ -85,6 +90,12 @@ Thread::~Thread()
     DEBUG('t', "Deleting thread \"%s\"\n", name);
 
     ASSERT(this != currentThread);
+    
+    /* if(join) {
+        delete cond;
+        delete cond_lock;
+    } */
+
     if (stack != nullptr) {
         SystemDep::DeallocBoundedArray((char *) stack,
                                        STACK_SIZE * sizeof *stack);
@@ -183,10 +194,12 @@ Thread::Finish()
 
     threadToBeDestroyed = currentThread;
 
-    cond_lock->Acquire();
-    finished = true;
-    cond->Broadcast();
-    cond_lock->Release();
+    if(join) {
+        cond_lock->Acquire();
+        finished = true;
+        cond->Broadcast();
+        cond_lock->Release();
+    }
 
     Sleep();  // Invokes `SWITCH`.
     // Not reached.
