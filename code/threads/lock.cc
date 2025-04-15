@@ -44,6 +44,14 @@ Lock::Acquire()
 {
     ASSERT(!IsHeldByCurrentThread());
     DEBUG('s', "Thread %s trying to acquire lock %s\n", currentThread->GetName(), name);
+
+#ifdef PRIORITY_INVERSION
+    if (owner != nullptr && owner->GetPriority() < currentThread->GetPriority()) {
+        DEBUG('b', "The owner %s has lower priority than the current thread %s.\n", owner->GetName(), currentThread->GetName());
+        currentThread->SetPriority(owner->GetPriority());
+    }
+#endif
+
     sem->P();
     owner = currentThread;
     DEBUG('s', "Thread %s acquired lock %s\n", currentThread->GetName(), name);
@@ -54,6 +62,11 @@ Lock::Release()
 {
     ASSERT(IsHeldByCurrentThread());
     DEBUG('s', "Thread %s trying to release lock %s\n", currentThread->GetName(), name);
+
+#ifdef PRIORITY_INVERSION
+    currentThread->SetPriority(currentThread->GetOriginalPriority());
+#endif
+
     owner = NULL;
     sem->V();
     DEBUG('s', "Thread %s released lock %s\n", currentThread->GetName(), name);
