@@ -49,6 +49,9 @@
 
 #include <stdint.h>
 
+const int NUM_PRIORITIES = 10;
+const int DEFAULT_PRIORITY = 4;
+
 
 /// CPU register state to be saved on context switch.
 ///
@@ -95,10 +98,13 @@ private:
     /// All registers except for `stackTop`.
     uintptr_t machineState[MACHINE_STATE_SIZE];
 
+    int priority;
+    int originalPriority;
+
 public:
 
     /// Initialize a `Thread`.
-    Thread(const char *debugName, bool _join = false);
+    Thread(const char *debugName, int _threadPriority = DEFAULT_PRIORITY, bool _join = false);
 
     /// Deallocate a Thread.
     ///
@@ -130,6 +136,13 @@ public:
     void Print() const;
     void Join();
     
+    int GetPriority() const;
+
+    void SetPriority(int newPriority);
+
+    int GetOriginalPriority() const;
+
+
 private:
     // Some of the private data for this class is listed above.
 

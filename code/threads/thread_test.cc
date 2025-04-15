@@ -17,6 +17,7 @@
 #include "thread_test_simple.hh"
 #include "thread_test_channel.hh"
 #include "thread_test_multiple_channel.hh"
+#include "thread_test_scheduler.hh"
 #include "thread_test_join.hh"
 #include "lib/utility.hh"
 
@@ -38,7 +39,8 @@ static const Test TESTS[] = {
     { &ThreadTestGardenSemaphores, "gardenSemaphores", "Ornamental garden (with semaphores)" },
     { &ThreadTestChannel, "channel", "Message passing with Channel" },
     { &TestMultipleSendersReceivers, "channel", "Message passing with Channel (multiple senders and receivers)" },
-    { &ThreadTestJoin, "join", "Test Join" }
+    { &ThreadTestJoin, "join", "Test Join" },
+    { &PrioritySchedulerTest, "scheduler", "Test priority queue for scheduler" }
 };
 static const unsigned NUM_TESTS = sizeof TESTS / sizeof TESTS[0];
 

@@ -60,7 +60,8 @@ THREAD_HDR = threads/condition.hh             \
              threads/thread_test_channel.hh   \
              threads/thread_test_multiple_channel.hh   \
              threads/thread_test_join.hh              \
-             threads/channel.hh
+             threads/channel.hh                \
+             threads/thread_test_scheduler.hh
              
 THREAD_SRC = threads/main.cc                  \
              threads/condition.cc             \
@@ -86,6 +87,7 @@ THREAD_SRC = threads/main.cc                  \
              threads/channel.cc               \
              threads/thread_test_multiple_channel.cc   \
              threads/thread_test_join.cc       \
+             threads/thread_test_scheduler.cc   \
              machine/timer.cc                 
 
 USERPROG_HDR = userprog/address_space.hh            \

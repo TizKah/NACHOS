@@ -39,7 +39,7 @@ void
 Thread::Join()
 {
     ASSERT(join);
-     
+
     cond_lock->Acquire();
     
     while(!finished) {
@@ -59,18 +59,24 @@ IsThreadStatus(ThreadStatus s)
 /// `Thread::Fork`.
 ///
 /// * `threadName` is an arbitrary string, useful for debugging.
-Thread::Thread(const char *threadName, bool _join)
+Thread::Thread(const char *threadName, int threadPriority, bool _join)
 {
     name     = threadName;
     stackTop = nullptr;
     stack    = nullptr;
     status   = JUST_CREATED;
     join = _join;
+
+    ASSERT(threadPriority >= 0 && threadPriority < NUM_PRIORITIES);
+    priority = threadPriority;
+    originalPriority = threadPriority;
+
     if(join) {
         cond_lock = new Lock("join_cond");
         cond = new Condition("join_cond", cond_lock);
     }
     finished = false;
+
 
 #ifdef USER_PROGRAM
     space    = nullptr;
@@ -165,6 +171,28 @@ const char *
 Thread::GetName() const
 {
     return name;
+}
+
+int
+Thread::GetPriority() const
+{
+    return priority;
+}
+
+void
+Thread::SetPriority(int newPriority)
+{
+    ASSERT(newPriority >= 0 && newPriority < NUM_PRIORITIES);
+    if (newPriority != priority) {
+         DEBUG('t', "Thread \"%s\" priority changed from %d to %d\n", name, priority, newPriority);
+         priority = newPriority;
+    }
+}
+
+int
+Thread::GetOriginalPriority() const
+{
+    return originalPriority;
 }
 
 void
