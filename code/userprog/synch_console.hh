@@ -8,13 +8,13 @@
 class SynchConsole
 {
 public:
-    SynchConsole(const char *readFile, const char *writeFile, void *callArg);
+    SynchConsole(const char *readFile, const char *writeFile);
     ~SynchConsole();
 
     void PutChar(char ch);
     char GetChar();
-    void readAvail();
-    void writeDone();
+    static void readAvail(void *data);
+    static void writeDone(void *data);
 
 private:
     Lock *write_lock;

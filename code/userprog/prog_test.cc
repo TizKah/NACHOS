@@ -90,3 +90,27 @@ ConsoleTest(const char *in, const char *out)
         }
     }
 }
+
+
+#include "synch_console.hh"
+
+SynchConsole *synchConsole;
+
+void WriterThread(void *) {
+    char c;
+    while (true) {
+        c = synchConsole->GetChar(); 
+        synchConsole->PutChar(c);
+        if (c == 'q') break;          
+    }
+    printf("\nWriter thread finished.\n");
+}
+
+void SynchConsoleTest(const char *in, const char *out) {
+    synchConsole = new SynchConsole(in, out);
+
+    Thread *t = new Thread("writer", 4, true);  
+    t->Fork(WriterThread, nullptr);
+    t->Join();
+}
+

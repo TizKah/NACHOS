@@ -1,16 +1,6 @@
 #include "synch_console.hh"
 
-
-
-static void ReadAvailStub(void *arg) {
-    ((SynchConsole *)arg)->readAvail();
-}
-
-static void WriteDoneStub(void *arg) {
-    ((SynchConsole *)arg)->writeDone();
-}
-
-SynchConsole::SynchConsole(const char *readFile, const char *writeFile, void *callArg)
+SynchConsole::SynchConsole(const char *readFile, const char *writeFile)
 {
 
     write_completed = new Semaphore("write sem", 0);
@@ -19,7 +9,7 @@ SynchConsole::SynchConsole(const char *readFile, const char *writeFile, void *ca
     read_completed = new Semaphore("read sem", 0);
     read_lock = new Lock("read lock");
 
-    console = new Console(readFile, writeFile, ReadAvailStub, WriteDoneStub, callArg);
+    console = new Console(readFile, writeFile, readAvail, writeDone, this);
 }
 
 
@@ -53,11 +43,11 @@ SynchConsole::GetChar()
 }
 
 void
-SynchConsole::readAvail() {
-    read_completed->V();
+SynchConsole::readAvail(void *data) {
+    ((SynchConsole *)data)->read_completed->V();
 }
 
 void
-SynchConsole::writeDone() {
-    write_completed->V();
+SynchConsole::writeDone(void *data) {
+    ((SynchConsole *)data)->write_completed->V();
 }
