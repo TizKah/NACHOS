@@ -55,10 +55,10 @@ SynchConsole::GetChar()
 
 void
 SynchConsole::readAvail() {
-    write_completed->V();
+    read_completed->V();
 }
 
 void
 SynchConsole::writeDone() {
-    read_completed->V();
+    write_completed->V();
 }
