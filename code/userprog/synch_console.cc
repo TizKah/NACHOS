@@ -34,7 +34,6 @@ SynchConsole::~SynchConsole() {
 void 
 SynchConsole::PutChar(char ch)
 {
-    ASSERT(ch != NULL);
     write_lock->Acquire();
     console->PutChar(ch);
     write_completed->P();
