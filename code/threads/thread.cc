@@ -77,10 +77,25 @@ Thread::Thread(const char *threadName, int threadPriority, bool _join)
     }
     finished = false;
 
+    for (int i = 0; i < MAX_OPEN_FILES; ++i) {
+        openFiles[i] = nullptr;
+    }
+    of_next_available_fd = 0;
 
 #ifdef USER_PROGRAM
     space    = nullptr;
 #endif
+}
+
+
+int
+Thread::AddOpenFile(OpenFile* file) 
+{
+    if(of_next_available_fd >= MAX_OPEN_FILES) 
+    return 0;
+
+    open_files[of_next_available_fd++] = file;
+    return 1;
 }
 
 /// De-allocate a thread.

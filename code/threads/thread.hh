@@ -51,7 +51,7 @@
 
 const int NUM_PRIORITIES = 10;
 const int DEFAULT_PRIORITY = 4;
-
+const int MAX_OPEN_FILES = 20;
 
 /// CPU register state to be saved on context switch.
 ///
@@ -137,10 +137,12 @@ public:
     void Join();
     
     int GetPriority() const;
-
     void SetPriority(int newPriority);
-
     int GetOriginalPriority() const;
+
+    int AddOpenFile(OpenFile* file);
+    OpenFile* open_files[MAX_OPEN_FILES];
+    int of_next_available_fd;
 
 
 private:

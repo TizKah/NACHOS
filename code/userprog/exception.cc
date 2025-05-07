@@ -167,7 +167,8 @@ SyscallHandler(ExceptionType _et)
                 break;
             }
 
-            // machine->WriteRegister(2, open_file); ver esto
+            int open_file_add = currentThread->AddOpenFile(open_file);
+            machine->WriteRegister(2, open_file_add);
             break;
         }
 
