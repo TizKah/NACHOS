@@ -40,7 +40,8 @@
 
 
 #include "lib/utility.hh"
-
+#include "table.hh"
+#include "open_file.hh"
 
 #ifdef USER_PROGRAM
 #include "machine/machine.hh"
@@ -141,9 +142,7 @@ public:
     int GetOriginalPriority() const;
 
     int AddOpenFile(OpenFile* file);
-    OpenFile* open_files[MAX_OPEN_FILES];
-    int of_next_available_fd;
-
+    Table<OpenFile* > *open_files;
 
 private:
     // Some of the private data for this class is listed above.

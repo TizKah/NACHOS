@@ -76,27 +76,13 @@ Thread::Thread(const char *threadName, int threadPriority, bool _join)
         cond = new Condition("join_cond", cond_lock);
     }
     finished = false;
-
-    for (int i = 0; i < MAX_OPEN_FILES; ++i) {
-        openFiles[i] = nullptr;
-    }
-    of_next_available_fd = 0;
+    open_files = new Table();
 
 #ifdef USER_PROGRAM
     space    = nullptr;
 #endif
 }
 
-
-int
-Thread::AddOpenFile(OpenFile* file) 
-{
-    if(of_next_available_fd >= MAX_OPEN_FILES) 
-    return 0;
-
-    open_files[of_next_available_fd++] = file;
-    return 1;
-}
 
 /// De-allocate a thread.
 ///
@@ -116,7 +102,8 @@ Thread::~Thread()
         delete cond;
         delete cond_lock;
     } */
-
+    del open_files;
+    
     if (stack != nullptr) {
         SystemDep::DeallocBoundedArray((char *) stack,
                                        STACK_SIZE * sizeof *stack);
