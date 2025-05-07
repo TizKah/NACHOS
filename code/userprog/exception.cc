@@ -10,7 +10,7 @@
 ///   For instance, accessing memory that does not exist, arithmetic errors,
 ///   etc.
 ///
-/// Interrupts (which can also cause control to transfer from user code into
+/// -- Interrupts (which can also cause control to transfer from user code into
 /// the Nachos kernel) are handled elsewhere.
 ///
 /// For now, this only handles the `Halt` system call.  Everything else core-
@@ -28,7 +28,11 @@
 #include "threads/system.hh"
 
 #include <stdio.h>
+#include <exception_type.hh>
+#include <open_file.hh>
+#include <system.hh>
 
+#define DEFAULT_NEW_FILE_SIZE 10000
 
 static void
 IncrementPC()
@@ -89,10 +93,14 @@ SyscallHandler(ExceptionType _et)
             interrupt->Halt();
             break;
 
+        /// Create a Nachos file, with `name`.
+        // -- int Create(const char *name);
         case SC_CREATE: {
             int filenameAddr = machine->ReadRegister(4);
             if (filenameAddr == 0) {
                 DEBUG('e', "Error: address to filename string is null.\n");
+                machine->WriteRegister(2, -1);
+                break;
             }
 
             char filename[FILE_NAME_MAX_LEN + 1];
@@ -100,12 +108,88 @@ SyscallHandler(ExceptionType _et)
                                     filename, sizeof filename)) {
                 DEBUG('e', "Error: filename string too long (maximum is %u bytes).\n",
                       FILE_NAME_MAX_LEN);
+                machine->WriteRegister(2, -1);
+                break;
             }
 
+
             DEBUG('e', "`Create` requested for file `%s`.\n", filename);
+            ASSERT(fileSystem->Create(filename, DEFAULT_NEW_FILE_SIZE));
             break;
         }
 
+        /// Remove the Nachos file named `name`.
+        // -- int Remove(const char *name);
+        case SC_REMOVE: {
+            int filenameAddr = machine->ReadRegister(4);
+            if (filenameAddr == 0) {
+                DEBUG('e', "Error: address to filename string is null.\n");
+                machine->WriteRegister(2, -1);
+            }
+            
+            char filename[FILE_NAME_MAX_LEN + 1];
+            if (!ReadStringFromUser(filenameAddr,
+                                    filename, sizeof filename)) {
+                DEBUG('e', "Error: filename string too long (maximum is %u bytes).\n",
+                      FILE_NAME_MAX_LEN);
+                machine->WriteRegister(2, -1);
+                break;
+            }
+
+            DEBUG('e', "Removing %s file.\n", filename);
+            ASSERT(fileSystem->Remove(filenameAddr));
+            break;
+        }
+
+        /// to read and write to the file.
+        // OpenFileId Open(const char *name);
+        case SC_OPEN: {
+            int filenameAddr = machine->ReadRegister(4);
+            if (filenameAddr == 0) {
+                DEBUG('e', "Error: address to filename string is null.\n");
+                machine->WriteRegister(2, -1);
+            }
+
+            char filename[FILE_NAME_MAX_LEN + 1];
+            if (!ReadStringFromUser(filenameAddr,
+                                    filename, sizeof filename)) {
+                DEBUG('e', "Error: filename string too long (maximum is %u bytes).\n",
+                      FILE_NAME_MAX_LEN);
+                machine->WriteRegister(2, -1);
+                break;
+            }
+
+            DEBUG('e', "Reading %s file.\n", filename);
+            OpenFile* open_file = fileSystem->Open(filename);
+            if(!open_file) {
+                DEBUG('e', "Error: file %s not found", filename);
+                machine->WriteRegister(2, -1);
+                break;
+            }
+
+            // machine->WriteRegister(2, open_file); ver esto
+            break;
+        }
+
+        /// Write `size` bytes from `buffer` to the open file.
+        // -- int Write(const char *buffer, int size, OpenFileId id);
+        case SC_WRITE: {
+
+        }
+
+        /// Read `size` bytes from the open file into `buffer`.
+        ///
+        /// Return the number of bytes actually read -- if the open file is not long
+        /// enough, or if it is an I/O device, and there are not enough characters to
+        /// read, return whatever is available (for I/O devices, you should always
+        /// wait until you can return at least one character).
+        // -- int Read(char *buffer, int size, OpenFileId id);
+        case SC_READ: {
+            
+        }
+
+        /// Close the file, we are done reading and writing to it.
+        // -- int Close(OpenFileId id);
         case SC_CLOSE: {
             int fid = machine->ReadRegister(4);
             DEBUG('e', "`Close` requested for id %u.\n", fid);
