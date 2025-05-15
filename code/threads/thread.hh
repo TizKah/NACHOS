@@ -141,7 +141,6 @@ public:
     void SetPriority(int newPriority);
     int GetOriginalPriority() const;
 
-    int AddOpenFile(OpenFile* file);
     Table<OpenFile* > *open_files;
 
 private:

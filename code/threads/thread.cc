@@ -76,7 +76,9 @@ Thread::Thread(const char *threadName, int threadPriority, bool _join)
         cond = new Condition("join_cond", cond_lock);
     }
     finished = false;
-    open_files = new Table();
+    open_files = new Table<OpenFile* >();
+    open_files->Add(NULL); // IDX -> 0 CONSOLE_INPUT
+    open_files->Add(NULL); // IDX -> 1 CONSOLE_OUTPUT
 
 #ifdef USER_PROGRAM
     space    = nullptr;
