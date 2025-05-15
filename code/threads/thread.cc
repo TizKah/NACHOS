@@ -104,7 +104,7 @@ Thread::~Thread()
         delete cond;
         delete cond_lock;
     } */
-    del open_files;
+    delete open_files;
     
     if (stack != nullptr) {
         SystemDep::DeallocBoundedArray((char *) stack,

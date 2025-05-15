@@ -26,11 +26,11 @@
 #include "syscall.h"
 #include "filesys/directory_entry.hh"
 #include "threads/system.hh"
-#include "assert.hh"
+#include "../lib/assert.hh"
 
 #include <stdio.h>
 #include <exception_type.hh>
-#include <open_file.hh>
+#include <../filesys/open_file.hh>
 #include <system.hh>
 
 #define DEFAULT_NEW_FILE_SIZE 10000
@@ -103,7 +103,6 @@ SyscallHandler(ExceptionType _et)
                 DEBUG('e', "Error: address to filename string is null.\n");
                 machine->WriteRegister(2, -1);
                 break;
-                break;
             }
 
             char filename[FILE_NAME_MAX_LEN + 1];
@@ -112,7 +111,6 @@ SyscallHandler(ExceptionType _et)
                 DEBUG('e', "Error: filename string too long (maximum is %u bytes).\n",
                       FILE_NAME_MAX_LEN);
                 machine->WriteRegister(2, -1);
-                break;
                 break;
             }
 
@@ -139,18 +137,11 @@ SyscallHandler(ExceptionType _et)
                       FILE_NAME_MAX_LEN);
                 machine->WriteRegister(2, -1);
                 break;
-                break;
-            }
-
-            int found = fileSystem->Find(filename);
-            if(!found) {
-                DEBUG('e', "Error: filename not found");
-                machine->WriteRegister(2, -1);
-                break;
             }
 
             DEBUG('e', "Removing %s file.\n", filename);
-            ASSERT(fileSystem->Remove(filenameAddr));
+            int removed = fileSystem->Remove(filename);
+            machine->WriteRegister(2, removed);
             break;
         }
 
@@ -171,7 +162,6 @@ SyscallHandler(ExceptionType _et)
                       FILE_NAME_MAX_LEN);
                 machine->WriteRegister(2, -1);
                 break;
-                break;
             }
 
             DEBUG('e', "Reading %s file.\n", filename);
@@ -179,7 +169,6 @@ SyscallHandler(ExceptionType _et)
             if(!open_file) {
                 DEBUG('e', "Error: file %s not found", filename);
                 machine->WriteRegister(2, -1);
-                break;
                 break;
             }
 
@@ -202,11 +191,6 @@ SyscallHandler(ExceptionType _et)
             
             char buffer[size + 1];
             ReadBufferFromUser(bufferAddr, buffer, size);
-            if(!buffer){
-                DEBUG('e', "Error: not buffer.\n");
-                machine->WriteRegister(2, -1);
-                break;
-            }
             
             OpenFileId open_file_idx = machine->ReadRegister(6);
             if(!open_file_idx) {
@@ -222,7 +206,7 @@ SyscallHandler(ExceptionType _et)
                 break;
             }
 
-            int num_written = open_file->Write(buffer, size);
+            unsigned int num_written = open_file->Write(buffer, size);
             if(num_written < size) {
                 DEBUG('e', "Error: cannot write.\n");
                 machine->WriteRegister(2, -1);
@@ -283,7 +267,7 @@ SyscallHandler(ExceptionType _et)
                 break;
             }
             
-            DEBUG('e', "`Close` requested for id %u.\n", fid);
+            DEBUG('e', "`Close` requested for id %u.\n", open_file_idx);
             machine->WriteRegister(2, 1);
             break;
         }

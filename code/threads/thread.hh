@@ -40,8 +40,8 @@
 
 
 #include "lib/utility.hh"
-#include "table.hh"
-#include "open_file.hh"
+#include "../lib/table.hh"
+#include "../filesys/open_file.hh"
 
 #ifdef USER_PROGRAM
 #include "machine/machine.hh"

@@ -16,7 +16,7 @@
 
 
 #include "raw_directory.hh"
-#include "open_file.hh"
+#include "../filesys/open_file.hh"
 
 
 /// The following class defines a UNIX-like “directory”.  Each entry in the
