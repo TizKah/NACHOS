@@ -26,6 +26,7 @@
 #include "syscall.h"
 #include "filesys/directory_entry.hh"
 #include "threads/system.hh"
+#include "assert.hh"
 
 #include <stdio.h>
 #include <exception_type.hh>
@@ -33,6 +34,7 @@
 #include <system.hh>
 
 #define DEFAULT_NEW_FILE_SIZE 10000
+#define MAX_BUFFER_SIZE 5000
 
 static void
 IncrementPC()
@@ -101,6 +103,7 @@ SyscallHandler(ExceptionType _et)
                 DEBUG('e', "Error: address to filename string is null.\n");
                 machine->WriteRegister(2, -1);
                 break;
+                break;
             }
 
             char filename[FILE_NAME_MAX_LEN + 1];
@@ -109,6 +112,7 @@ SyscallHandler(ExceptionType _et)
                 DEBUG('e', "Error: filename string too long (maximum is %u bytes).\n",
                       FILE_NAME_MAX_LEN);
                 machine->WriteRegister(2, -1);
+                break;
                 break;
             }
 
@@ -125,6 +129,7 @@ SyscallHandler(ExceptionType _et)
             if (filenameAddr == 0) {
                 DEBUG('e', "Error: address to filename string is null.\n");
                 machine->WriteRegister(2, -1);
+                break;
             }
             
             char filename[FILE_NAME_MAX_LEN + 1];
@@ -132,6 +137,14 @@ SyscallHandler(ExceptionType _et)
                                     filename, sizeof filename)) {
                 DEBUG('e', "Error: filename string too long (maximum is %u bytes).\n",
                       FILE_NAME_MAX_LEN);
+                machine->WriteRegister(2, -1);
+                break;
+                break;
+            }
+
+            int found = fileSystem->Find(filename);
+            if(!found) {
+                DEBUG('e', "Error: filename not found");
                 machine->WriteRegister(2, -1);
                 break;
             }
@@ -148,6 +161,7 @@ SyscallHandler(ExceptionType _et)
             if (filenameAddr == 0) {
                 DEBUG('e', "Error: address to filename string is null.\n");
                 machine->WriteRegister(2, -1);
+                break;
             }
 
             char filename[FILE_NAME_MAX_LEN + 1];
@@ -157,6 +171,7 @@ SyscallHandler(ExceptionType _et)
                       FILE_NAME_MAX_LEN);
                 machine->WriteRegister(2, -1);
                 break;
+                break;
             }
 
             DEBUG('e', "Reading %s file.\n", filename);
@@ -165,17 +180,57 @@ SyscallHandler(ExceptionType _et)
                 DEBUG('e', "Error: file %s not found", filename);
                 machine->WriteRegister(2, -1);
                 break;
+                break;
             }
 
-            int open_file_add = currentThread->open_files->Add(open_file);
-            machine->WriteRegister(2, open_file_add);
+            int open_file_add_idx = currentThread->open_files->Add(open_file);
+            machine->WriteRegister(2, open_file_add_idx);
             break;
         }
 
         /// Write `size` bytes from `buffer` to the open file.
         // -- int Write(const char *buffer, int size, OpenFileId id);
         case SC_WRITE: {
+            int bufferAddr = machine->ReadRegister(4);
+            
+            unsigned int size = machine->ReadRegister(5);
+            if(size <= 0){
+                DEBUG('e', "Error: not valid size.\n");
+                machine->WriteRegister(2, -1);
+                break;
+            }
+            
+            char buffer[size + 1];
+            ReadBufferFromUser(bufferAddr, buffer, size);
+            if(!buffer){
+                DEBUG('e', "Error: not buffer.\n");
+                machine->WriteRegister(2, -1);
+                break;
+            }
+            
+            OpenFileId open_file_idx = machine->ReadRegister(6);
+            if(!open_file_idx) {
+                DEBUG('e', "Error: failed open file.\n");
+                machine->WriteRegister(2, -1);
+                break;
+            }
+            
+            OpenFile* open_file = currentThread->open_files->Get(open_file_idx);
+            if(!open_file){
+                DEBUG('e', "Error: file not open.\n");
+                machine->WriteRegister(2, -1);
+                break;
+            }
 
+            int num_written = open_file->Write(buffer, size);
+            if(num_written < size) {
+                DEBUG('e', "Error: cannot write.\n");
+                machine->WriteRegister(2, -1);
+                break;
+            }
+
+            machine->WriteRegister(2, num_written);
+            break;
         }
 
         /// Read `size` bytes from the open file into `buffer`.
@@ -186,14 +241,50 @@ SyscallHandler(ExceptionType _et)
         /// wait until you can return at least one character).
         // -- int Read(char *buffer, int size, OpenFileId id);
         case SC_READ: {
+            int bufferAddr = machine->ReadRegister(4);
             
+            unsigned int size = machine->ReadRegister(5);
+            if(size <= 0){
+                DEBUG('e', "Error: not valid size.\n");
+                machine->WriteRegister(2, -1);
+                break;
+            }
+            
+            OpenFileId open_file_idx = machine->ReadRegister(6);
+            if(!open_file_idx) {
+                DEBUG('e', "Error: failed open file.\n");
+                machine->WriteRegister(2, -1);
+                break;
+            }
+            
+            OpenFile* open_file = currentThread->open_files->Get(open_file_idx);
+            if(!open_file){
+                DEBUG('e', "Error: file not open.\n");
+                machine->WriteRegister(2, -1);
+                break;
+            }
+
+            char buffer[size + 1];
+            int num_readed = open_file->Read(buffer, size);
+            WriteBufferToUser(buffer, bufferAddr, num_readed);
+            machine->WriteRegister(2, num_readed);
+            break;
         }
 
         /// Close the file, we are done reading and writing to it.
         // -- int Close(OpenFileId id);
         case SC_CLOSE: {
-            int fid = machine->ReadRegister(4);
+            OpenFileId open_file_idx = machine->ReadRegister(4);
+            
+            OpenFile* deleted_file = currentThread->open_files->Remove(open_file_idx);
+            if(!deleted_file) {
+                DEBUG('e', "Error: file not created.\n");
+                machine->WriteRegister(2, -1);
+                break;
+            }
+            
             DEBUG('e', "`Close` requested for id %u.\n", fid);
+            machine->WriteRegister(2, 1);
             break;
         }
 
