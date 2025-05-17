@@ -27,7 +27,6 @@
 #include "filesys/directory_entry.hh"
 #include "threads/system.hh"
 #include "../lib/assert.hh"
-#include "../threads/system.hh"
 
 #include <stdio.h>
 #include <exception_type.hh>
@@ -115,9 +114,9 @@ SyscallHandler(ExceptionType _et)
                 break;
             }
 
-
             DEBUG('e', "`Create` requested for file `%s`.\n", filename);
             ASSERT(fileSystem->Create(filename, DEFAULT_NEW_FILE_SIZE));
+            machine->WriteRegister(2, 1);
             break;
         }
 
@@ -165,15 +164,17 @@ SyscallHandler(ExceptionType _et)
                 break;
             }
 
-            DEBUG('e', "Reading %s file.\n", filename);
+            DEBUG('e', "'Open' Opening %s file.\n", filename);
             OpenFile* open_file = fileSystem->Open(filename);
             if(!open_file) {
                 DEBUG('e', "Error: file %s not found", filename);
                 machine->WriteRegister(2, -1);
+                delete open_file;
                 break;
             }
 
             int open_file_add_idx = currentThread->open_files->Add(open_file);
+            DEBUG('e', "'Open' Opened %s file have id %d.\n", filename, open_file_add_idx);
             if(open_file_add_idx == -1) {
                 DEBUG('e', "Error: cannot add file.\n");
                 machine->WriteRegister(2, -1);
@@ -201,6 +202,7 @@ SyscallHandler(ExceptionType _et)
             
             OpenFileId open_file_idx = machine->ReadRegister(6);
             if(open_file_idx == CONSOLE_OUTPUT) {
+                DEBUG('e', "'Write' Writing in console.\n");
                 for(int i = 0; i < size; i++) {
                     synch_console->PutChar(buffer[i]);
                 }
@@ -210,9 +212,11 @@ SyscallHandler(ExceptionType _et)
                 if(!open_file){
                     DEBUG('e', "Error: file not open.\n");
                     machine->WriteRegister(2, -1);
+                    delete open_file;
                     break;
                 }
 
+                DEBUG('e', "'Write' Writing in file %d.\n", open_file_idx);
                 if(open_file->Write(buffer, size) < size) {
                     DEBUG('e', "Error: cannot write.\n");
                     machine->WriteRegister(2, -1);
@@ -251,6 +255,7 @@ SyscallHandler(ExceptionType _et)
             char buffer[size + 1];
             int num_readed;
             if(open_file_idx == CONSOLE_INPUT) {
+                DEBUG('e', "'Read' Reading from console.\n");
                 int i;
                 for(i = 0; i < size; i++) {
                     buffer[i] = synch_console->GetChar();
@@ -265,9 +270,10 @@ SyscallHandler(ExceptionType _et)
                 if(!open_file){
                     DEBUG('e', "Error: file not open.\n");
                     machine->WriteRegister(2, -1);
+                    delete open_file;
                     break;
                 }
-
+                DEBUG('e', "'Read' Reading from file %d.\n", open_file_idx);
                 num_readed = open_file->Read(buffer, size);
                 machine->WriteRegister(2, num_readed);
             }
@@ -290,6 +296,7 @@ SyscallHandler(ExceptionType _et)
             if(!deleted_file) {
                 DEBUG('e', "Error: file not created.\n");
                 machine->WriteRegister(2, -1);
+                delete deleted_file;
                 break;
             }
             
@@ -298,6 +305,12 @@ SyscallHandler(ExceptionType _et)
             break;
         }
 
+        case SC_EXIT: {
+            DEBUG('e', "`Exit` Temporal case for exit syscall.\n");
+            machine->WriteRegister(2, 1);
+            break;
+        }
+        
         default:
             fprintf(stderr, "Unexpected system call: id %d.\n", scid);
             ASSERT(false);
