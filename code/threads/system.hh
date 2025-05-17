@@ -16,7 +16,6 @@
 #include "machine/statistics.hh"
 #include "machine/timer.hh"
 
-
 /// Initialization and cleanup routines.
 
 // Initialization, called before anything else.
@@ -34,8 +33,10 @@ extern Statistics *stats;            ///< Performance metrics.
 extern Timer *timer;                 ///< The hardware alarm clock.
 
 #ifdef USER_PROGRAM
+#include "userprog/synch_console.hh"
 #include "machine/machine.hh"
 extern Machine *machine;  // User program memory and registers.
+extern SynchConsole *synch_console;
 #endif
 
 #ifdef FILESYS_NEEDED  // *FILESYS* or *FILESYS_STUB*.

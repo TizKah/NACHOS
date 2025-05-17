@@ -1,8 +1,8 @@
 #ifndef NACHOS_USERPROG_SYNCH_CONSOLE__H
 #define NACHOS_USERPROG_SYNCH_CONSOLE__H
 
-#include "semaphore.hh"
-#include "lock.hh"
+#include "../threads/semaphore.hh"
+#include "../threads/lock.hh"
 #include "console.hh"
 
 class SynchConsole

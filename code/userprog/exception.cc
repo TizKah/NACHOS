@@ -27,6 +27,7 @@
 #include "filesys/directory_entry.hh"
 #include "threads/system.hh"
 #include "../lib/assert.hh"
+#include "../threads/system.hh"
 
 #include <stdio.h>
 #include <exception_type.hh>
@@ -173,6 +174,12 @@ SyscallHandler(ExceptionType _et)
             }
 
             int open_file_add_idx = currentThread->open_files->Add(open_file);
+            if(open_file_add_idx == -1) {
+                DEBUG('e', "Error: cannot add file.\n");
+                machine->WriteRegister(2, -1);
+                delete open_file;
+                break;
+            }
             machine->WriteRegister(2, open_file_add_idx);
             break;
         }
@@ -182,7 +189,7 @@ SyscallHandler(ExceptionType _et)
         case SC_WRITE: {
             int bufferAddr = machine->ReadRegister(4);
             
-            unsigned int size = machine->ReadRegister(5);
+            int size = machine->ReadRegister(5);
             if(size <= 0){
                 DEBUG('e', "Error: not valid size.\n");
                 machine->WriteRegister(2, -1);
@@ -193,27 +200,27 @@ SyscallHandler(ExceptionType _et)
             ReadBufferFromUser(bufferAddr, buffer, size);
             
             OpenFileId open_file_idx = machine->ReadRegister(6);
-            if(!open_file_idx) {
-                DEBUG('e', "Error: failed open file.\n");
-                machine->WriteRegister(2, -1);
-                break;
-            }
-            
-            OpenFile* open_file = currentThread->open_files->Get(open_file_idx);
-            if(!open_file){
-                DEBUG('e', "Error: file not open.\n");
-                machine->WriteRegister(2, -1);
-                break;
+            if(open_file_idx == CONSOLE_OUTPUT) {
+                for(int i = 0; i < size; i++) {
+                    synch_console->PutChar(buffer[i]);
+                }
+            } 
+            else {
+                OpenFile* open_file = currentThread->open_files->Get(open_file_idx);
+                if(!open_file){
+                    DEBUG('e', "Error: file not open.\n");
+                    machine->WriteRegister(2, -1);
+                    break;
+                }
+
+                if(open_file->Write(buffer, size) < size) {
+                    DEBUG('e', "Error: cannot write.\n");
+                    machine->WriteRegister(2, -1);
+                    break;
+                }
             }
 
-            unsigned int num_written = open_file->Write(buffer, size);
-            if(num_written < size) {
-                DEBUG('e', "Error: cannot write.\n");
-                machine->WriteRegister(2, -1);
-                break;
-            }
-
-            machine->WriteRegister(2, num_written);
+            machine->WriteRegister(2, size);
             break;
         }
 
@@ -227,7 +234,7 @@ SyscallHandler(ExceptionType _et)
         case SC_READ: {
             int bufferAddr = machine->ReadRegister(4);
             
-            unsigned int size = machine->ReadRegister(5);
+            int size = machine->ReadRegister(5);
             if(size <= 0){
                 DEBUG('e', "Error: not valid size.\n");
                 machine->WriteRegister(2, -1);
@@ -241,17 +248,30 @@ SyscallHandler(ExceptionType _et)
                 break;
             }
             
-            OpenFile* open_file = currentThread->open_files->Get(open_file_idx);
-            if(!open_file){
-                DEBUG('e', "Error: file not open.\n");
-                machine->WriteRegister(2, -1);
-                break;
-            }
-
             char buffer[size + 1];
-            int num_readed = open_file->Read(buffer, size);
+            int num_readed;
+            if(open_file_idx == CONSOLE_INPUT) {
+                int i;
+                for(i = 0; i < size; i++) {
+                    buffer[i] = synch_console->GetChar();
+                    if(buffer[i] == '\n') 
+                        break;
+                }
+                buffer[i+1] = 0;
+                machine->WriteRegister(2, i);
+            }
+            else {
+                OpenFile* open_file = currentThread->open_files->Get(open_file_idx);
+                if(!open_file){
+                    DEBUG('e', "Error: file not open.\n");
+                    machine->WriteRegister(2, -1);
+                    break;
+                }
+
+                num_readed = open_file->Read(buffer, size);
+                machine->WriteRegister(2, num_readed);
+            }
             WriteBufferToUser(buffer, bufferAddr, num_readed);
-            machine->WriteRegister(2, num_readed);
             break;
         }
 
@@ -259,7 +279,13 @@ SyscallHandler(ExceptionType _et)
         // -- int Close(OpenFileId id);
         case SC_CLOSE: {
             OpenFileId open_file_idx = machine->ReadRegister(4);
-            
+            // open_file_idx == CONSOLE_INPUT || open_file_idx == CONSOLE_OUTPUT
+            if((open_file_idx >> 1) == 0){
+                DEBUG('e', "Cant close stdout or stdin.\n");
+                machine->WriteRegister(2, -1);
+                break;
+            }
+
             OpenFile* deleted_file = currentThread->open_files->Remove(open_file_idx);
             if(!deleted_file) {
                 DEBUG('e', "Error: file not created.\n");

@@ -11,6 +11,7 @@
 #ifdef USER_PROGRAM
 #include "userprog/debugger.hh"
 #include "userprog/exception.hh"
+#include "userprog/synch_console.hh"
 #endif
 
 #include <stdlib.h>
@@ -124,6 +125,7 @@ Initialize(int argc, char **argv)
 #ifdef USER_PROGRAM
     bool debugUserProg = false;  // Single step user program.
     int numPhysicalPages = DEFAULT_NUM_PHYS_PAGES;
+    SynchConsole *synch_console = new SynchConsole(nullptr, nullptr);
 #endif
 #ifdef FILESYS_NEEDED
     bool format = false;  // Format disk.
