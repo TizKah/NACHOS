@@ -255,14 +255,12 @@ SyscallHandler(ExceptionType _et)
             int num_readed;
             if(open_file_idx == CONSOLE_INPUT) {
                 DEBUG('e', "'Read' Reading from console.\n");
-                int i;
-                for(i = 0; i < size; i++) {
-                    buffer[i] = synch_console->GetChar();
-                    if(buffer[i] == '\n') 
+                for(num_readed = 0; num_readed < size; num_readed++) {
+                    buffer[num_readed] = synch_console->GetChar();
+                    if(buffer[num_readed] == '\n') 
                         break;
                 }
-                buffer[i+1] = 0;
-                machine->WriteRegister(2, i);
+                machine->WriteRegister(2, num_readed);
             }
             else {
                 OpenFile* open_file = currentThread->open_files->Get(open_file_idx);
