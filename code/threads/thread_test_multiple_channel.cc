@@ -11,7 +11,8 @@ const int NUM_RECEIVERS = 3;
 bool senders_done[NUM_SENDERS] = {false};
 bool receivers_done[NUM_RECEIVERS] = {false};
 
-void SenderThread(int id) {
+void SenderThread(void* arg) {
+    int id = (int)(uintptr_t) arg;
     for (int i = 0; i < 5; ++i) {
         int msg = id + i;
         globalChannel->Send(msg);
@@ -21,7 +22,8 @@ void SenderThread(int id) {
 }
 
 
-void ReceiverThread(int id) {
+void ReceiverThread(void* arg) {
+    int id = (int)(uintptr_t) arg;
     for (int i = 0; i < 5; ++i) {
         int msg;
         globalChannel->Receive(&msg);
@@ -38,7 +40,7 @@ void TestMultipleSendersReceivers() {
         char* name = new char[16];
         snprintf(name, 16, "Sender-%d", i);
         Thread* t = new Thread(name);
-        t->Fork((VoidFunctionPtr) SenderThread, (void*) i);
+        t->Fork((VoidFunctionPtr) SenderThread, (void*)(uintptr_t) i);
     }
 
     
@@ -46,7 +48,7 @@ void TestMultipleSendersReceivers() {
         char* name = new char[16];
         snprintf(name, 16, "Receiver-%d", i);
         Thread* t = new Thread(name);
-        t->Fork((VoidFunctionPtr) ReceiverThread, (void*) i);
+        t->Fork((VoidFunctionPtr) ReceiverThread, (void*)(uintptr_t) i);
     }
 
     int max = NUM_RECEIVERS > NUM_SENDERS ? NUM_RECEIVERS : NUM_SENDERS;
