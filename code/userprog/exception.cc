@@ -250,11 +250,6 @@ SyscallHandler(ExceptionType _et)
             }
             
             OpenFileId open_file_idx = machine->ReadRegister(6);
-            if(!open_file_idx) {
-                DEBUG('e', "Error: failed open file.\n");
-                machine->WriteRegister(2, -1);
-                break;
-            }
             
             char buffer[size + 1];
             int num_readed;
