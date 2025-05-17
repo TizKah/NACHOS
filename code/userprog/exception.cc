@@ -191,6 +191,8 @@ SyscallHandler(ExceptionType _et)
             int bufferAddr = machine->ReadRegister(4);
             
             int size = machine->ReadRegister(5);
+            DEBUG('e', "'Write' write size %d'\n", size);
+
             if(size <= 0){
                 DEBUG('e', "Error: not valid size.\n");
                 machine->WriteRegister(2, -1);
@@ -201,10 +203,12 @@ SyscallHandler(ExceptionType _et)
             ReadBufferFromUser(bufferAddr, buffer, size);
             
             OpenFileId open_file_idx = machine->ReadRegister(6);
+            DEBUG('e', "Syscall: SC_WRITE received - bufferAddr=0x%x, size=%d, fileId=%d\n", bufferAddr, size, open_file_idx);
             if(open_file_idx == CONSOLE_OUTPUT) {
                 DEBUG('e', "'Write' Writing in console.\n");
                 for(int i = 0; i < size; i++) {
                     synch_console->PutChar(buffer[i]);
+                    DEBUG('e', "  [WRITE_LOOP] Writing char %d: '%c'\n", i, buffer[i]);
                 }
             } 
             else {

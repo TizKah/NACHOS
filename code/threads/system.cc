@@ -216,6 +216,7 @@ Cleanup()
 
 #ifdef USER_PROGRAM
     delete machine;
+    delete synch_console;
 #endif
 
 #ifdef FILESYS_NEEDED
