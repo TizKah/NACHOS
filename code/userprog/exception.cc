@@ -115,7 +115,13 @@ SyscallHandler(ExceptionType _et)
             }
 
             DEBUG('e', "`Create` requested for file `%s`.\n", filename);
-            ASSERT(fileSystem->Create(filename, DEFAULT_NEW_FILE_SIZE));
+            int file_created = fileSystem->Create(filename, DEFAULT_NEW_FILE_SIZE);
+            if (!file_created) {
+                DEBUG('e', "Error: cannot create file.\n");
+                machine->WriteRegister(2, -1);
+                break;
+            }
+            
             machine->WriteRegister(2, 1);
             break;
         }
@@ -169,7 +175,6 @@ SyscallHandler(ExceptionType _et)
             if(!open_file) {
                 DEBUG('e', "Error: file %s not found", filename);
                 machine->WriteRegister(2, -1);
-                delete open_file;
                 break;
             }
 
@@ -216,7 +221,6 @@ SyscallHandler(ExceptionType _et)
                 if(!open_file){
                     DEBUG('e', "Error: file not open.\n");
                     machine->WriteRegister(2, -1);
-                    delete open_file;
                     break;
                 }
 
@@ -224,6 +228,7 @@ SyscallHandler(ExceptionType _et)
                 if(open_file->Write(buffer, size) < size) {
                     DEBUG('e', "Error: cannot write.\n");
                     machine->WriteRegister(2, -1);
+                    delete open_file;
                     break;
                 }
             }
@@ -267,7 +272,6 @@ SyscallHandler(ExceptionType _et)
                 if(!open_file){
                     DEBUG('e', "Error: file not open.\n");
                     machine->WriteRegister(2, -1);
-                    delete open_file;
                     break;
                 }
                 DEBUG('e', "'Read' Reading from file %d.\n", open_file_idx);
@@ -293,12 +297,21 @@ SyscallHandler(ExceptionType _et)
             if(!deleted_file) {
                 DEBUG('e', "Error: file not created.\n");
                 machine->WriteRegister(2, -1);
-                delete deleted_file;
                 break;
             }
             
             DEBUG('e', "`Close` requested for id %u.\n", open_file_idx);
             machine->WriteRegister(2, 1);
+            break;
+        }
+
+        case SC_EXEC: {
+
+            break;
+        }
+
+        case SC_JOIN: {
+
             break;
         }
 
