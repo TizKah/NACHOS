@@ -12,6 +12,7 @@
 #include "userprog/debugger.hh"
 #include "userprog/exception.hh"
 #include "userprog/synch_console.hh"
+#include "lib/table.hh"
 #endif
 
 #include <stdlib.h>
@@ -41,6 +42,8 @@ SynchDisk *synchDisk;
 #ifdef USER_PROGRAM  // Requires either *FILESYS* or *FILESYS_STUB*.
 Machine *machine;  ///< User program memory and registers.
 SynchConsole *synch_console;
+Table<Thread* > *current_threads;
+Bitmap *physical_page_bitmap = NULL;
 #endif
 
 // External definition, to allow us to take a pointer to this function.
@@ -183,6 +186,11 @@ Initialize(int argc, char **argv)
     // We did not explicitly allocate the current thread we are running in.
     // But if it ever tries to give up the CPU, we better have a `Thread`
     // object to save its state.
+
+#ifdef USER_PROGRAM
+    current_threads = new Table<Thread* >();
+#endif
+
     currentThread = new Thread("main");
     currentThread->SetStatus(RUNNING);
 
@@ -195,6 +203,7 @@ Initialize(int argc, char **argv)
     machine = new Machine(d, numPhysicalPages);  // This must come first.
     SetExceptionHandlers();
     synch_console = new SynchConsole(nullptr, nullptr);
+    physical_page_bitmap = new Bitmap(numPhysicalPages);
 
 #endif
 
@@ -217,6 +226,8 @@ Cleanup()
 #ifdef USER_PROGRAM
     delete machine;
     delete synch_console;
+    delete current_threads;
+    delete physical_page_bitmap;
 #endif
 
 #ifdef FILESYS_NEEDED

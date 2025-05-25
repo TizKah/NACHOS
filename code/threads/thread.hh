@@ -41,10 +41,10 @@
 
 #include "lib/utility.hh"
 #include "../lib/table.hh"
-#include "../filesys/open_file.hh"
 
 #ifdef USER_PROGRAM
 #include "machine/machine.hh"
+#include "../filesys/open_file.hh"
 #include "userprog/address_space.hh"
 #endif
 
@@ -66,7 +66,7 @@ const unsigned MACHINE_STATE_SIZE = 17;
 ///
 /// WATCH OUT IF THIS IS NOT BIG ENOUGH!!!!!
 const unsigned STACK_SIZE = 4 * 1024;
-
+class Channel;
 
 /// Thread state.
 enum ThreadStatus {
@@ -125,7 +125,7 @@ public:
     void Sleep();
 
     /// The thread is done executing.
-    void Finish();
+    void Finish(int status = 0);
 
     /// Check if thread has overflowed its stack.
     void CheckOverflow() const;
@@ -135,13 +135,12 @@ public:
     const char *GetName() const;
 
     void Print() const;
-    void Join();
+    int Join();
     
     int GetPriority() const;
     void SetPriority(int newPriority);
     int GetOriginalPriority() const;
 
-    Table<OpenFile* > *open_files;
 
 private:
     // Some of the private data for this class is listed above.
@@ -153,15 +152,15 @@ private:
     
     bool finished;
     bool join;
-
     /// Ready, running or blocked.
+    Channel* channel;
     ThreadStatus status;
-
+    
     const char *name;
-
+    
     /// Allocate a stack for thread.  Used internally by `Fork`.
     void StackAllocate(VoidFunctionPtr func, void *arg);
-
+    
 #ifdef USER_PROGRAM
     /// User-level CPU register state.
     ///
@@ -178,6 +177,8 @@ public:
     // Restore user-level register state.
     void RestoreUserState();
 
+    Table<OpenFile* > *open_files;
+    int threadId;
     // User code this thread is running.
     AddressSpace *space;
 #endif

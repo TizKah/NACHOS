@@ -23,30 +23,19 @@
 
 #include <inttypes.h>
 #include <stdio.h>
-
+#include "threads/channel.hh"
 
 /// This is put at the top of the execution stack, for detecting stack
 /// overflows.
 const unsigned STACK_FENCEPOST = 0xDEADBEEF;
 
-
-#include "condition.hh"
-#include "lock.hh"
-Lock *cond_lock;
-Condition *cond;
-
-void
+int
 Thread::Join()
 {
     ASSERT(join);
-
-    cond_lock->Acquire();
-    
-    while(!finished) {
-        cond->Wait();
-    }
-    
-    cond_lock->Release();
+    int *exitStatus = new int;
+    channel->Receive(exitStatus);
+    return *exitStatus;
 }
 
 static inline bool
@@ -72,15 +61,16 @@ Thread::Thread(const char *threadName, int threadPriority, bool _join)
     originalPriority = threadPriority;
 
     if(join) {
-        cond_lock = new Lock("join_cond");
-        cond = new Condition("join_cond", cond_lock);
+        channel = new Channel();
     }
     finished = false;
+#ifdef USER_PROGRAM
+
     open_files = new Table<OpenFile* >();
     open_files->Add(NULL); // IDX -> 0 CONSOLE_INPUT
     open_files->Add(NULL); // IDX -> 1 CONSOLE_OUTPUT
 
-#ifdef USER_PROGRAM
+    threadId = current_threads->Add(currentThread);
     space    = nullptr;
 #endif
 }
@@ -100,11 +90,13 @@ Thread::~Thread()
 
     ASSERT(this != currentThread);
     
-    /* if(join) {
-        delete cond;
-        delete cond_lock;
-    } */
+    if(channel) {
+        delete channel;
+    }
+#ifdef USER_PROGRAM
     delete open_files;
+    current_threads->Remove(threadId);
+#endif
     
     if (stack != nullptr) {
         SystemDep::DeallocBoundedArray((char *) stack,
@@ -217,7 +209,7 @@ Thread::Print() const
 /// NOTE: we disable interrupts, so that we do not get a time slice between
 /// setting `threadToBeDestroyed`, and going to sleep.
 void
-Thread::Finish()
+Thread::Finish(int exitStatus)
 {
     interrupt->SetLevel(INT_OFF);
     ASSERT(this == currentThread);
@@ -227,10 +219,8 @@ Thread::Finish()
     threadToBeDestroyed = currentThread;
 
     if(join) {
-        cond_lock->Acquire();
         finished = true;
-        cond->Broadcast();
-        cond_lock->Release();
+        channel->Send(exitStatus);
     }
 
     Sleep();  // Invokes `SWITCH`.

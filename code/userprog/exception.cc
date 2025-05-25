@@ -27,6 +27,8 @@
 #include "filesys/directory_entry.hh"
 #include "threads/system.hh"
 #include "../lib/assert.hh"
+#include "address_space.hh"
+
 
 #include <stdio.h>
 #include <exception_type.hh>
@@ -66,6 +68,14 @@ DefaultHandler(ExceptionType et)
             ExceptionTypeToString(et), exceptionArg);
     ASSERT(false);
 }
+
+static void
+newProcessThread(void* args) {
+    currentThread->space->InitRegisters();  // Set the initial register values.
+    currentThread->space->RestoreState();   // Load page table register.
+    machine->Run();  // Jump to the user progam.
+}
+
 
 /// Handle a system call exception.
 ///
@@ -257,14 +267,17 @@ SyscallHandler(ExceptionType _et)
             OpenFileId open_file_idx = machine->ReadRegister(6);
             
             char buffer[size + 1];
-            int num_readed;
+            int num_readed = 0;
             if(open_file_idx == CONSOLE_INPUT) {
                 DEBUG('e', "'Read' Reading from console.\n");
-                for(num_readed = 0; num_readed < size; num_readed++) {
+                for(; num_readed < size; num_readed++) {
                     buffer[num_readed] = synch_console->GetChar();
-                    if(buffer[num_readed] == '\n') 
+                    if(buffer[num_readed] == '\n') {
+                        num_readed++;
                         break;
+                    }
                 }
+                DEBUG('e', "'Read' read %d ch from console.\n", num_readed);
                 machine->WriteRegister(2, num_readed);
             }
             else {
@@ -305,19 +318,73 @@ SyscallHandler(ExceptionType _et)
             break;
         }
 
+        /// Run the executable, stored in the Nachos file `name`, and return the
+        /// address space identifier.
+        /// --- SpaceId Exec(char *name);
         case SC_EXEC: {
+            int filenameAddr = machine->ReadRegister(4);
+            if (filenameAddr == 0) {
+                DEBUG('e', "'Exec': Error: address to filename string is null.\n");
+                machine->WriteRegister(2, -1);
+                break;
+            }
 
+            char filename[FILE_NAME_MAX_LEN + 1];
+            if (!ReadStringFromUser(filenameAddr,
+                                    filename, sizeof filename)) {
+                DEBUG('e', "'Exec': Error: filename string too long (maximum is %u bytes).\n",
+                      FILE_NAME_MAX_LEN);
+                machine->WriteRegister(2, -1);
+                break;
+            }
+            
+            OpenFile* exe = fileSystem->Open(filename);
+            if(!exe) {
+                DEBUG('e', "'Exec': Error: file %s not created.\n", filename);
+                machine->WriteRegister(2, -1);
+                break;
+            }
+
+            Thread* thread = new Thread(filename, 4, true);
+            AddressSpace* addrSpace = new AddressSpace(exe);
+            DEBUG('e', "'Exec': New thread and addrSpace created.\n");
+
+            thread->space = addrSpace;
+            SpaceId spaceId = thread->threadId;
+            DEBUG('e', "'Exec': Executing new program in addrspace %d, with new threadId %d.\n", addrSpace, spaceId);
+            thread->Fork(newProcessThread, NULL);
+            
+            // delete exe;
+            machine->WriteRegister(2, spaceId);
             break;
         }
 
+
+        /// Only return once the the user program `id` has finished.
+        /// Return the exit status.
+        /// --- int Join(SpaceId id);
         case SC_JOIN: {
+            SpaceId spaceId = machine->ReadRegister(4);
+            if(spaceId < 0) {
+                DEBUG('e', "'Join': Invalid spaceId %d\n", spaceId);
+                machine->WriteRegister(2, -1);
+                break;
+            }
 
+            DEBUG('e', "'Join': ThreadId %d waiting\n", spaceId);
+            int status = current_threads->Get(spaceId)->Join();
+            
+            DEBUG('e', "'Join': Process %d finished with status %d\n", spaceId, status);
+            machine->WriteRegister(2, status);
             break;
         }
 
+        /// This user program is done (`status = 0` means exited normally).
+        /// -- void Exit(int status);
         case SC_EXIT: {
-            DEBUG('e', "`Exit` Temporal case for exit syscall.\n");
-            machine->WriteRegister(2, 1);
+            int status = machine->ReadRegister(4);
+            DEBUG('e', "'Exit': Requested with status %d.\n", status);
+            currentThread->Finish(status);
             break;
         }
         
