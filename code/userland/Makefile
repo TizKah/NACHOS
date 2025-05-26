@@ -35,7 +35,7 @@ INCLUDE_DIRS = -I../userprog -I../threads
 CFLAGS       = -std=c99 -G 0 -c $(INCLUDE_DIRS) -mips1 -mfp32 \
                -nostdlib -nostartfiles -nodefaultlibs -fno-pic -mno-abicalls
 
-PROGRAMS = echo filetest halt matmult shell sort tinyshell touch echo_argless fileio_test read_console
+PROGRAMS = echo filetest halt matmult shell sort tinyshell touch echo_argless fileio_test read_console cat rm cp
 
 
 .PHONY: all clean
@@ -62,7 +62,7 @@ start.o: start.s ../userprog/syscall.h
 	@echo ":: Compiling $$(tput bold)$@$$(tput sgr0)"
 	@$(CC) $(CFLAGS) -c $^
 
-$(PROGRAMS): %: %.o start.o
+$(PROGRAMS): %: %.o start.o lib.o
 	@echo ":: Linking and converting $$(tput bold)$@$$(tput sgr0)"
-	@$(LD) $(LDFLAGS) start.o $*.o -o $*.coff
+	@$(LD) $(LDFLAGS) start.o $*.o lib.o -o $*.coff
 	@../bin/coff2noff $*.coff $@
