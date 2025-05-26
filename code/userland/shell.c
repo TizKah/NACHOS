@@ -127,13 +127,11 @@ main(void)
         if (line[0] == '&') {
             background = 1;
 
-            for (int j = 0; j < i; j++) {
+            for (int j = 0; j < sizeof line / sizeof(char); j++) {
                 line[j] = line[j+1];
             }
-
-            i--;
         }
-        
+
         const SpaceId newProc = Exec(line);
 
         
