@@ -12,16 +12,17 @@ main(void)
     int        i;
     
     for (;;) {
-        int background = 0;
         Write(prompt, 2, output);
         i = 0;
         do {
             Read(&buffer[i], 1, input);
         } while (buffer[i++] != '\n');
-
+        
         buffer[--i] = '\0';
-
+        
         if (i > 0) {
+            int background = 0;
+            
             if (buffer[0] == '&') {
                 background = 1;
 
