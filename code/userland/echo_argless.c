@@ -39,4 +39,6 @@ main()
         PrintString(str[i]);
     }
     PrintChar('\n');
+
+    Exit(0);
 }

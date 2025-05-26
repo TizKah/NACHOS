@@ -12,6 +12,7 @@
 
 #include <string.h>
 
+#define min(X, Y) (((X) < (Y)) ? (X) : (Y))
 
 /// First, set up the translation from program memory to physical memory.
 /// For now, this is really simple (1:1), since we are only uniprogramming,
@@ -30,7 +31,7 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
     numPages = DivRoundUp(size, PAGE_SIZE);
     size = numPages * PAGE_SIZE;
 
-    ASSERT(numPages <= machine->GetNumPhysicalPages());
+    ASSERT(numPages <= physical_page_bitmap->CountClear());
       // Check we are not trying to run anything too big -- at least until we
       // have virtual memory.
 
@@ -41,9 +42,10 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
 
     pageTable = new TranslationEntry[numPages];
     for (unsigned i = 0; i < numPages; i++) {
+        int phys_new_page = physical_page_bitmap->Find();
+        ASSERT(phys_new_page != -1);
         pageTable[i].virtualPage  = i;
-          // For now, virtual page number = physical page number.
-        pageTable[i].physicalPage = i;
+        pageTable[i].physicalPage = phys_new_page;
         pageTable[i].valid        = true;
         pageTable[i].use          = false;
         pageTable[i].dirty        = false;
@@ -54,24 +56,47 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
 
     char *mainMemory = machine->mainMemory;
 
-    // Zero out the entire address space, to zero the unitialized data
-    // segment and the stack segment.
-    memset(mainMemory, 0, size);
-
-    // Then, copy in the code and data segments into memory.
+    for (unsigned i = 0; i < numPages; i++) {
+      memset(&mainMemory[pageTable[i].physicalPage*PAGE_SIZE],0,PAGE_SIZE);
+    }
     uint32_t codeSize = exe.GetCodeSize();
     uint32_t initDataSize = exe.GetInitDataSize();
+
     if (codeSize > 0) {
         uint32_t virtualAddr = exe.GetCodeAddr();
-        DEBUG('a', "Initializing code segment, at 0x%X, size %u\n",
+        DEBUG('z', "Initializing code segment, at 0x%X, size %u\n",
               virtualAddr, codeSize);
-        exe.ReadCodeBlock(&mainMemory[virtualAddr], codeSize, 0);
+        uint32_t virtualPage    = virtualAddr/PAGE_SIZE;
+        uint32_t offset        = virtualAddr%PAGE_SIZE;
+        uint32_t currentCodeSize = codeSize;
+        uint32_t sizeToRead = min(PAGE_SIZE-offset,currentCodeSize);
+
+        exe.ReadCodeBlock(&mainMemory[(pageTable[virtualPage].physicalPage*PAGE_SIZE)+offset], sizeToRead, 0);
+        currentCodeSize -= sizeToRead;
+        virtualPage++;
+        for(;currentCodeSize > 0; virtualPage++){
+          sizeToRead = min(PAGE_SIZE,currentCodeSize);
+          exe.ReadCodeBlock(&mainMemory[pageTable[virtualPage].physicalPage*PAGE_SIZE], sizeToRead, codeSize-currentCodeSize);
+          currentCodeSize -= sizeToRead;
+        }
     }
     if (initDataSize > 0) {
         uint32_t virtualAddr = exe.GetInitDataAddr();
-        DEBUG('a', "Initializing data segment, at 0x%X, size %u\n",
-              virtualAddr, initDataSize);
-        exe.ReadDataBlock(&mainMemory[virtualAddr], initDataSize, 0);
+        DEBUG('z', "Initializing data segment, at 0x%X, size %u\n", virtualAddr, initDataSize);
+
+        uint32_t virtualPage    = virtualAddr/PAGE_SIZE;
+        uint32_t offset        = virtualAddr%PAGE_SIZE;
+        uint32_t currentIDataSize = initDataSize;
+        uint32_t sizeToRead = min(PAGE_SIZE-offset, currentIDataSize);
+
+        exe.ReadDataBlock(&mainMemory[(pageTable[virtualPage].physicalPage*PAGE_SIZE)+offset], sizeToRead, 0);
+        currentIDataSize -= sizeToRead;
+        virtualPage++;
+        for(;currentIDataSize > 0; virtualPage++){
+          sizeToRead = min(PAGE_SIZE,currentIDataSize);
+          exe.ReadDataBlock(&mainMemory[pageTable[virtualPage].physicalPage*PAGE_SIZE], sizeToRead, initDataSize-currentIDataSize);
+          currentIDataSize -= sizeToRead;
+        }
     }
 
 }
@@ -81,6 +106,11 @@ AddressSpace::AddressSpace(OpenFile *executable_file)
 /// Nothing for now!
 AddressSpace::~AddressSpace()
 {
+    for (unsigned i = 0; i < numPages; i++) {
+
+        physical_page_bitmap->Clear(pageTable[i].physicalPage);
+        
+    }
     delete [] pageTable;
 }
 

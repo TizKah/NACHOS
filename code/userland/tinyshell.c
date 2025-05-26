@@ -22,7 +22,7 @@ main(void)
         
         if (i > 0) {
             int background = 0;
-            
+
             if (buffer[0] == '&') {
                 background = 1;
 

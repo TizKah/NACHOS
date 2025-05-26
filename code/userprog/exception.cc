@@ -71,6 +71,7 @@ DefaultHandler(ExceptionType et)
 
 static void
 newProcessThread(void* args) {
+    DEBUG('e', "newProcessThread: Entering in the function\n");
     currentThread->space->InitRegisters();  // Set the initial register values.
     currentThread->space->RestoreState();   // Load page table register.
     machine->Run();  // Jump to the user progam.
@@ -218,12 +219,12 @@ SyscallHandler(ExceptionType _et)
             ReadBufferFromUser(bufferAddr, buffer, size);
             
             OpenFileId open_file_idx = machine->ReadRegister(6);
-            DEBUG('e', "Syscall: SC_WRITE received - bufferAddr=0x%x, size=%d, fileId=%d\n", bufferAddr, size, open_file_idx);
+            // DEBUG('e', "Syscall: SC_WRITE received - bufferAddr=0x%x, size=%d, fileId=%d\n", bufferAddr, size, open_file_idx);
             if(open_file_idx == CONSOLE_OUTPUT) {
                 DEBUG('e', "'Write' Writing in console.\n");
                 for(int i = 0; i < size; i++) {
                     synch_console->PutChar(buffer[i]);
-                    DEBUG('e', "  [WRITE_LOOP] Writing char %d: '%c'\n", i, buffer[i]);
+                    // DEBUG('e', "  [WRITE_LOOP] Writing char %d: '%c'\n", i, buffer[i]);
                 }
             } 
             else {
@@ -277,7 +278,7 @@ SyscallHandler(ExceptionType _et)
                         break;
                     }
                 }
-                DEBUG('e', "'Read' read %d ch from console.\n", num_readed);
+                // DEBUG('e', "'Read' read %d ch from console.\n", num_readed);
                 machine->WriteRegister(2, num_readed);
             }
             else {
@@ -351,10 +352,11 @@ SyscallHandler(ExceptionType _et)
 
             thread->space = addrSpace;
             SpaceId spaceId = thread->threadId;
-            DEBUG('e', "'Exec': Executing new program in addrspace %d, with new threadId %d.\n", addrSpace, spaceId);
+            DEBUG('e', "'Exec': Executing new program, with new threadId %d with name %s.\n", spaceId, thread->GetName());
             thread->Fork(newProcessThread, NULL);
-            
-            // delete exe;
+
+            DEBUG('e', "'Exec': Fork executed, father %s.\n", currentThread->GetName());
+            delete exe;
             machine->WriteRegister(2, spaceId);
             break;
         }
@@ -371,7 +373,8 @@ SyscallHandler(ExceptionType _et)
                 break;
             }
 
-            DEBUG('e', "'Join': ThreadId %d waiting\n", spaceId);
+            DEBUG('e', "'Join': ThreadId %d waiting threadId %d to finish\n", currentThread->threadId, spaceId);
+            DEBUG('e', "'Join': Thread %s waiting thread %s to finish\n", currentThread->GetName(), current_threads->Get(spaceId)->GetName());
             int status = current_threads->Get(spaceId)->Join();
             
             DEBUG('e', "'Join': Process %d finished with status %d\n", spaceId, status);
@@ -384,6 +387,7 @@ SyscallHandler(ExceptionType _et)
         case SC_EXIT: {
             int status = machine->ReadRegister(4);
             DEBUG('e', "'Exit': Requested with status %d.\n", status);
+            DEBUG('e', "'Exit': Thread %s finishing.\n", currentThread->GetName());
             currentThread->Finish(status);
             break;
         }

@@ -191,7 +191,7 @@ Initialize(int argc, char **argv)
     current_threads = new Table<Thread* >();
 #endif
 
-    currentThread = new Thread("main");
+    currentThread = new Thread("main", 3, true);
     currentThread->SetStatus(RUNNING);
 
     interrupt->Enable();

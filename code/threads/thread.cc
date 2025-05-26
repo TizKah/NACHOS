@@ -20,6 +20,7 @@
 #include "thread.hh"
 #include "switch.h"
 #include "system.hh"
+#include "string.h"
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -34,7 +35,7 @@ Thread::Join()
 {
     ASSERT(join);
     int *exitStatus = new int;
-    channel->Receive(exitStatus);
+    if (channel) channel->Receive(exitStatus);
     return *exitStatus;
 }
 
@@ -50,7 +51,8 @@ IsThreadStatus(ThreadStatus s)
 /// * `threadName` is an arbitrary string, useful for debugging.
 Thread::Thread(const char *threadName, int threadPriority, bool _join)
 {
-    name     = threadName;
+    strncpy(name, threadName, THREAD_NAME_MAX_LEN - 1);
+    name[THREAD_NAME_MAX_LEN - 1] = '\0';
     stackTop = nullptr;
     stack    = nullptr;
     status   = JUST_CREATED;
@@ -65,12 +67,13 @@ Thread::Thread(const char *threadName, int threadPriority, bool _join)
     }
     finished = false;
 #ifdef USER_PROGRAM
+    threadId = current_threads->Add(this);
+    DEBUG('t', "Created thread %s with threadId %d", GetName(), threadId);
 
     open_files = new Table<OpenFile* >();
     open_files->Add(NULL); // IDX -> 0 CONSOLE_INPUT
     open_files->Add(NULL); // IDX -> 1 CONSOLE_OUTPUT
-
-    threadId = current_threads->Add(currentThread);
+    
     space    = nullptr;
 #endif
 }
@@ -90,9 +93,6 @@ Thread::~Thread()
 
     ASSERT(this != currentThread);
     
-    if(channel) {
-        delete channel;
-    }
 #ifdef USER_PROGRAM
     delete open_files;
     current_threads->Remove(threadId);

@@ -59,7 +59,7 @@ const int MAX_OPEN_FILES = 20;
 /// x86 processors needs 9 32-bit registers, whereas x64 has 8 extra
 /// registers.  We allocate room for the maximum of these two architectures.
 const unsigned MACHINE_STATE_SIZE = 17;
-
+const unsigned THREAD_NAME_MAX_LEN = 128;
 /// Size of the thread's private execution stack.
 ///
 /// In words.
@@ -156,7 +156,7 @@ private:
     Channel* channel;
     ThreadStatus status;
     
-    const char *name;
+    char name[THREAD_NAME_MAX_LEN];
     
     /// Allocate a stack for thread.  Used internally by `Fork`.
     void StackAllocate(VoidFunctionPtr func, void *arg);
