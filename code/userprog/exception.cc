@@ -91,27 +91,41 @@ newProcessThreadArgs(void* argsV) {
     machine->WriteRegister(4, argsCount);
     machine->WriteRegister(5, argsAddr);
 
-    DEBUG('e', "Verifying argv array in user stack AFTER WriteArgs:\n");
-    int ptr_val;
-    for (int i = 0; i < argsCount + 1; i++) { // +1 para el puntero NULL final
-        int current_ptr_location = argsAddr + (i * 4); // Ubicación del puntero actual
-        bool success = machine->ReadMem(current_ptr_location, 4, &ptr_val);
-        if (success) {
-            DEBUG('e', "  argv[%d] at vaddr %d contains value 0x%x (%d decimal)\n",
-                  i, current_ptr_location, ptr_val, ptr_val);
-        } else {
-            DEBUG('e', "  Failed to read argv[%d] from vaddr %d\n", i, current_ptr_location);
-        }
-    }
+    // De args.hh:
+    /// CAUTION: if you intend to use this to pass command-line arguments to a
+    /// new process in the C way (by passing function arguments to the starting
+    /// function), then make sure to take into account the function call argument
+    /// area.  This consists of some space at the top of the stack that has to be
+    /// reserved when making a function call with arguments; the called function
+    /// can use the area to store arguments passed in registers.  This is
+    /// mandated by the MIPS ABI, and its omission may cause corruption of
+    /// either `argv` or stored register values.  The area must be able to hold
+    /// the 4 arguments that can be passed in registers: `a0..4`, hence it
+    /// occupies 16 bytes.  Therefore, the problem is solved by substracting 24
+    /// to `sp`.
+    machine->WriteRegister(STACK_REG,  argsAddr - 24);
 
-    char bufferArgs[MAX_BUFFER_SIZE];
-    int virtual_addr;
-    DEBUG('e', "Arguments count: %d\n", argsCount);
-    for( int i = 0 ; i < argsCount ; i++ ){
-        machine -> ReadMem(argsAddr + (4*i), 4, &virtual_addr);
-        ReadStringFromUser(virtual_addr, bufferArgs, MAX_BUFFER_SIZE);
-        DEBUG('e', "%d - nth argument: %s, virtual addr: %d \n", i, bufferArgs, virtual_addr);
-    }
+    // Codigo para debugear mas a fondo
+    // DEBUG('e', "Verifying argv array in user stack AFTER WriteArgs:\n");
+    // int ptr_val;
+    // for (int i = 0; i < argsCount + 1; i++) { // +1 para el puntero NULL final
+    //     int current_ptr_location = argsAddr + (i * 4); // Ubicación del puntero actual
+    //     bool success = machine->ReadMem(current_ptr_location, 4, &ptr_val);
+    //     if (success) {
+    //         DEBUG('e', "  argv[%d] at vaddr %d contains value 0x%x (%d decimal)\n",
+    //               i, current_ptr_location, ptr_val, ptr_val);
+    //     } else {
+    //         DEBUG('e', "  Failed to read argv[%d] from vaddr %d\n", i, current_ptr_location);
+    //     }
+    // }
+    // char bufferArgs[MAX_BUFFER_SIZE];
+    // int virtual_addr;
+    // DEBUG('e', "Arguments count: %d\n", argsCount);
+    // for( int i = 0 ; i < argsCount ; i++ ){
+    //     machine -> ReadMem(argsAddr + (4*i), 4, &virtual_addr);
+    //     ReadStringFromUser(virtual_addr, bufferArgs, MAX_BUFFER_SIZE);
+    //     DEBUG('e', "%d - nth argument: %s, virtual addr: %d \n", i, bufferArgs, virtual_addr);
+    // }
 
     DEBUG('e', "newProcessThreadArgs: Readed args %d, argsAddr %d\n", argsCount, argsAddr);
 
