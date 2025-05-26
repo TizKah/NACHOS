@@ -112,22 +112,19 @@ main(void)
             continue;
         }
 
+
+
         if (PrepareArguments(line, argv, MAX_ARG_COUNT) == 0) {
             WriteError("too many arguments.", OUTPUT);
             continue;
         }
 
-        // TODO: check for errors when calling `Exec`; this depends on how
-        //       errors are reported.
-
+        int start = 0;
         if (line[0] == '&') {
             background = 1;
-            for(int i = 0; i < strlen(line); i++){
-                line[i] = line[i+i];
-            }
+            start = 1;
         }
-        
-        const SpaceId newProc = Exec2(line, argv);
+        const SpaceId newProc = Exec2(&line[start], argv);
 
         
         if (!background) {

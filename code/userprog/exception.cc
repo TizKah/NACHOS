@@ -85,7 +85,6 @@ newProcessThreadArgs(void* argsV) {
 
     char ** args = (char**) argsV;
     int argsCount = WriteArgs(args);
-    /// AddressSpace::InitRegisters() -> machine->WriteRegister(STACK_REG, numPages * PageSize - 16);
     int argsAddr = machine->ReadRegister(STACK_REG);
 
     machine->WriteRegister(4, argsCount);
