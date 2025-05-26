@@ -104,8 +104,9 @@ main(void)
     const OpenFileId OUTPUT = CONSOLE_OUTPUT;
     char             line[MAX_LINE_SIZE];
     char            *argv[MAX_ARG_COUNT];
-
     for (;;) {
+        int background = 0;
+
         WritePrompt(OUTPUT);
         const unsigned lineSize = ReadLine(line, MAX_LINE_SIZE, INPUT);
         if (lineSize == 0) {
@@ -119,13 +120,26 @@ main(void)
 
         // Comment and uncomment according to whether command line arguments
         // are given in the system call or not.
-        const SpaceId newProc = Exec(line);
         //const SpaceId newProc = Exec(line, argv);
 
         // TODO: check for errors when calling `Exec`; this depends on how
         //       errors are reported.
+        if (line[0] == '&') {
+            background = 1;
 
-        Join(newProc);
+            for (int j = 0; j < i; j++) {
+                line[j] = line[j+1];
+            }
+
+            i--;
+        }
+        
+        const SpaceId newProc = Exec(line);
+
+        
+        if (!background) {
+            Join(newProc);
+        }
         // TODO: is it necessary to check for errors after `Join` too, or
         //       can you be sure that, with the implementation of the system
         //       call handler you made, it will never give an error?; what

@@ -10,8 +10,9 @@ main(void)
     char       prompt[2] = { '-', '-' };
     char       ch, buffer[60];
     int        i;
-
+    
     for (;;) {
+        int background = 0;
         Write(prompt, 2, output);
         i = 0;
         do {
@@ -21,8 +22,21 @@ main(void)
         buffer[--i] = '\0';
 
         if (i > 0) {
+            if (buffer[0] == '&') {
+                background = 1;
+
+                for (int j = 0; j < i; j++) {
+                    buffer[j] = buffer[j+1];
+                }
+
+                i--;
+            }
+
             newProc = Exec(buffer);
-            Join(newProc);
+
+            if (!background) {
+                Join(newProc);
+            }
         }
     }
 
