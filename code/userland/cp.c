@@ -37,10 +37,12 @@ int main(int argc, char **argv) {
 
     char buffer[BUFFER_SIZE];
     int bytesRead;
+    int totalBytesRead = 0;
 
-    while ((bytesRead = Read(buffer, BUFFER_SIZE, srcFile)) > 0) {
+    while (bytesRead = Read(buffer, BUFFER_SIZE, srcFile)) {
         Write(buffer, bytesRead, dstFile);
-    }
+    } 
+    
 
     Close(srcFile);
     Close(dstFile);

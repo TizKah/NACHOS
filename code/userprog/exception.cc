@@ -345,7 +345,7 @@ SyscallHandler(ExceptionType _et)
                 num_readed = open_file->Read(buffer, size);
                 machine->WriteRegister(2, num_readed);
             }
-            WriteBufferToUser(buffer, bufferAddr, num_readed);
+            if(num_readed) WriteBufferToUser(buffer, bufferAddr, num_readed);
             break;
         }
 
