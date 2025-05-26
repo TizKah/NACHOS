@@ -28,7 +28,7 @@
 #include "threads/system.hh"
 #include "../lib/assert.hh"
 #include "address_space.hh"
-
+#include "args.hh"
 
 #include <stdio.h>
 #include <exception_type.hh>
@@ -36,7 +36,7 @@
 #include <system.hh>
 
 #define DEFAULT_NEW_FILE_SIZE 10000
-#define MAX_BUFFER_SIZE 5000
+#define MAX_BUFFER_SIZE 1024
 
 static void
 IncrementPC()
@@ -72,11 +72,51 @@ DefaultHandler(ExceptionType et)
 static void
 newProcessThread(void* args) {
     DEBUG('e', "newProcessThread: Entering in the function\n");
-    currentThread->space->InitRegisters();  // Set the initial register values.
-    currentThread->space->RestoreState();   // Load page table register.
-    machine->Run();  // Jump to the user progam.
+    currentThread->space->InitRegisters();  
+    currentThread->space->RestoreState();   
+    machine->Run(); 
 }
 
+static void
+newProcessThreadArgs(void* argsV) {
+    DEBUG('e', "newProcessThreadArgs: Entering in the function\n");
+    currentThread->space->InitRegisters(); 
+    currentThread->space->RestoreState();  
+
+    char ** args = (char**) argsV;
+    int argsCount = WriteArgs(args);
+    /// AddressSpace::InitRegisters() -> machine->WriteRegister(STACK_REG, numPages * PageSize - 16);
+    int argsAddr = machine->ReadRegister(STACK_REG);
+
+    machine->WriteRegister(4, argsCount);
+    machine->WriteRegister(5, argsAddr);
+
+    DEBUG('e', "Verifying argv array in user stack AFTER WriteArgs:\n");
+    int ptr_val;
+    for (int i = 0; i < argsCount + 1; i++) { // +1 para el puntero NULL final
+        int current_ptr_location = argsAddr + (i * 4); // Ubicación del puntero actual
+        bool success = machine->ReadMem(current_ptr_location, 4, &ptr_val);
+        if (success) {
+            DEBUG('e', "  argv[%d] at vaddr %d contains value 0x%x (%d decimal)\n",
+                  i, current_ptr_location, ptr_val, ptr_val);
+        } else {
+            DEBUG('e', "  Failed to read argv[%d] from vaddr %d\n", i, current_ptr_location);
+        }
+    }
+
+    char bufferArgs[MAX_BUFFER_SIZE];
+    int virtual_addr;
+    DEBUG('e', "Arguments count: %d\n", argsCount);
+    for( int i = 0 ; i < argsCount ; i++ ){
+        machine -> ReadMem(argsAddr + (4*i), 4, &virtual_addr);
+        ReadStringFromUser(virtual_addr, bufferArgs, MAX_BUFFER_SIZE);
+        DEBUG('e', "%d - nth argument: %s, virtual addr: %d \n", i, bufferArgs, virtual_addr);
+    }
+
+    DEBUG('e', "newProcessThreadArgs: Readed args %d, argsAddr %d\n", argsCount, argsAddr);
+
+    machine->Run(); 
+}
 
 /// Handle a system call exception.
 ///
@@ -361,7 +401,47 @@ SyscallHandler(ExceptionType _et)
             break;
         }
 
+        // --- SpaceId Exec2(char *name, void* args);
+        case SC_EXEC2: {
+            int filenameAddr = machine->ReadRegister(4);
+            int argsAddr = machine->ReadRegister(5);
 
+            if (filenameAddr == 0) {
+                DEBUG('e', "'Exec': Error: address to filename string is null.\n");
+                machine->WriteRegister(2, -1);
+                break;
+            }
+
+            char filename[FILE_NAME_MAX_LEN + 1];
+            if (!ReadStringFromUser(filenameAddr,
+                                    filename, sizeof filename)) {
+                DEBUG('e', "'Exec': Error: filename string too long (maximum is %u bytes).\n",
+                      FILE_NAME_MAX_LEN);
+                machine->WriteRegister(2, -1);
+                break;
+            }
+            
+            OpenFile* exe = fileSystem->Open(filename);
+            if(!exe) {
+                DEBUG('e', "'Exec': Error: file %s not created.\n", filename);
+                machine->WriteRegister(2, -1);
+                break;
+            }
+
+            Thread* thread = new Thread(filename, 4, true);
+            AddressSpace* addrSpace = new AddressSpace(exe);
+            DEBUG('e', "'Exec': New thread and addrSpace created.\n");
+
+            thread->space = addrSpace;
+            SpaceId spaceId = thread->threadId;
+            DEBUG('e', "'Exec': Executing new program, with new threadId %d with name %s.\n", spaceId, thread->GetName());
+            thread->Fork(newProcessThreadArgs, SaveArgs(argsAddr));
+
+            DEBUG('e', "'Exec': Fork executed, father %s.\n", currentThread->GetName());
+            delete exe;
+            machine->WriteRegister(2, spaceId);
+            break;
+        }
         /// Only return once the the user program `id` has finished.
         /// Return the exit status.
         /// --- int Join(SpaceId id);

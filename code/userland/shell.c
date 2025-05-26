@@ -1,6 +1,5 @@
 #include "syscall.h"
 
-
 #define MAX_LINE_SIZE  60
 #define MAX_ARG_COUNT  32
 #define ARG_SEPARATOR  ' '
@@ -118,19 +117,17 @@ main(void)
             continue;
         }
 
-        // Comment and uncomment according to whether command line arguments
-        // are given in the system call or not.
-        //const SpaceId newProc = Exec(line, argv);
-
         // TODO: check for errors when calling `Exec`; this depends on how
         //       errors are reported.
+
         if (line[0] == '&') {
             background = 1;
-
-            memmove(line, line + 1, strlen(line));
+            for(int i = 0; i < strlen(line); i++){
+                line[i] = line[i+i];
+            }
         }
-
-        const SpaceId newProc = Exec(line);
+        
+        const SpaceId newProc = Exec2(line, argv);
 
         
         if (!background) {
