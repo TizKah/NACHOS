@@ -44,13 +44,15 @@ public:
 
     /// Save/restore address space-specific info on a context switch.
 
+    TranslationEntry* NewPage(int virtual_address_space);
+
     void SaveState();
     void RestoreState();
 
-private:
-
     /// Assume linear page table translation for now!
     TranslationEntry *pageTable;
+private:
+
 
     /// Number of pages in the virtual address space.
     unsigned numPages;

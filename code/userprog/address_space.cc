@@ -167,3 +167,14 @@ AddressSpace::RestoreState()
 
   machine->GetMMU()->pageTableSize = numPages;
 }
+
+TranslationEntry*
+AddressSpace::NewPage(int virtual_address_space) {
+  pageTable[virtual_address_space].virtualPage = virtual_address_space;
+  pageTable[virtual_address_space].physicalPage = physical_page_bitmap->Find();
+  pageTable[virtual_address_space].valid = true;
+  pageTable[virtual_address_space].readOnly = false;
+  pageTable[virtual_address_space].use = false;
+  pageTable[virtual_address_space].dirty = false;
+  return &pageTable[virtual_address_space];
+}

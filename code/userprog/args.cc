@@ -102,7 +102,7 @@ WriteArgs(char **args)
     sp -= c * 4 + 4;  // Make room for `argv`, including the trailing null.
     // Write each argument's address.
     for (unsigned i = 0; i < c; i++) {
-        if(!ine->WriteMem(sp + 4 * i, 4, argsAddress[i])){
+        if(!machine->WriteMem(sp + 4 * i, 4, argsAddress[i])){
             machine->WriteMem(sp + 4 * i, 4, argsAddress[i]);
         }
     }

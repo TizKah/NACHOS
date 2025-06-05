@@ -81,9 +81,25 @@ DefaultHandler(ExceptionType et)
 //    unsigned virtualPage; unsigned physicalPage; bool valid; 
 //    bool readOnly; bool use; bool dirty
 
+static int tlb_to_replace = 0;
+
 static void 
 PageFaultHandler(ExceptionType et) {
-    int tlb_to_replace;
+    int virtual_address = machine->ReadRegister(BAD_VADDR_REG);
+    int virtual_address_page = virtual_address / PAGE_SIZE;
+    DEBUG('e', "PageFaultHandler: PageFaultException generated\n");
+
+    if(!currentThread->space->pageTable[virtual_address_page].valid){
+        // En caso de no ser válida, cargamos en la TLB una página nueva 
+        machine->GetMMU()->tlb[tlb_to_replace] = *currentThread->space->NewPage(virtual_address_page);
+    }
+    else {
+        // En caso de ser válida la traemos del espacio de memoria para guardarla en la TLBs
+        machine->GetMMU()->tlb[tlb_to_replace] = currentThread->space->pageTable[virtual_address_page];
+    }
+
+
+    tlb_to_replace = (tlb_to_replace + 1) % TLB_SIZE;
 }
 
 static void

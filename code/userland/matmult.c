@@ -40,5 +40,6 @@ main(void)
     }
 
     // And then we are done.
+    // Exit(C[DIM - 1][DIM - 1]); -> ./nachos -d e -m 100 -x matmult para testear la salida 
     return C[DIM - 1][DIM - 1];
 }
