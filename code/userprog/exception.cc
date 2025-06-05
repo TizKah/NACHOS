@@ -69,6 +69,23 @@ DefaultHandler(ExceptionType et)
     ASSERT(false);
 }
 
+// unsigned vpn, TranslationEntry **entry
+// vpn -> virtual page number
+// **entry -> tlb[N]
+// Funcion que carga a la TLB la fila de la page table relacionada a la vpn que se pide
+
+// -> debo agregar a la TLB una entrada con vpn, physicalPage, valid = true
+// readOnly = false, use = false, dirty = false
+
+//class TranslationEntry:
+//    unsigned virtualPage; unsigned physicalPage; bool valid; 
+//    bool readOnly; bool use; bool dirty
+
+static void 
+PageFaultHandler(ExceptionType et) {
+    int tlb_to_replace;
+}
+
 static void
 newProcessThread(void* args) {
     DEBUG('e', "newProcessThread: Entering in the function\n");
@@ -502,7 +519,7 @@ SetExceptionHandlers()
 {
     machine->SetHandler(NO_EXCEPTION,            &DefaultHandler);
     machine->SetHandler(SYSCALL_EXCEPTION,       &SyscallHandler);
-    machine->SetHandler(PAGE_FAULT_EXCEPTION,    &DefaultHandler);
+    machine->SetHandler(PAGE_FAULT_EXCEPTION,    &PageFaultHandler);
     machine->SetHandler(READ_ONLY_EXCEPTION,     &DefaultHandler);
     machine->SetHandler(BUS_ERROR_EXCEPTION,     &DefaultHandler);
     machine->SetHandler(ADDRESS_ERROR_EXCEPTION, &DefaultHandler);
