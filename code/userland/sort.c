@@ -36,5 +36,6 @@ main(void)
     }
 
     // And then we're done -- should be 0!
+    // Sobre comentario de arriba: ¿cómo va a ser cero si la inicialización usa DIM - i con i < DIM siempre? (cómo 2 horas intentando debugear xq no me daba cero)
     return A[0];
 }

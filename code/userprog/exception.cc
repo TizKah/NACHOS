@@ -87,7 +87,7 @@ static void
 PageFaultHandler(ExceptionType et) {
     int virtual_address = machine->ReadRegister(BAD_VADDR_REG);
     int virtual_address_page = virtual_address / PAGE_SIZE;
-    DEBUG('e', "PageFaultHandler: PageFaultException generated\n");
+    // DEBUG('e', "PageFaultHandler: PageFaultException generated\n");
 
     if(!currentThread->space->pageTable[virtual_address_page].valid){
         // En caso de no ser válida, cargamos en la TLB una página nueva 
@@ -514,6 +514,8 @@ SyscallHandler(ExceptionType _et)
             int status = machine->ReadRegister(4);
             DEBUG('e', "'Exit': Requested with status %d.\n", status);
             DEBUG('e', "'Exit': Thread %s finishing.\n", currentThread->GetName());
+            DEBUG('e', "'Exit': Hit fail %d.\n", machine->GetMMU()->hit_fail);
+            DEBUG('e', "'Exit': Hit success %d.\n", machine->GetMMU()->hit_success);
             currentThread->Finish(status);
             break;
         }

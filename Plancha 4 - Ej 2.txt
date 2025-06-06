@@ -1,0 +1,39 @@
+-- MATMULT --
+TLB_SIZE = 4
+[e] 'Exit': Hit fail 62630.
+[e] 'Exit': Hit success 747062.
+Hit ratio: 92.27%
+
+-- MATMULT --
+TLB_SIZE = 32
+[e] 'Exit': Hit fail 108.
+[e] 'Exit': Hit success 709409.  
+Hit ratio: 99.98%
+
+-- MATMULT --
+TLB_SIZE = 64
+[e] 'Exit': Hit fail 47.
+[e] 'Exit': Hit success 709357.
+Hit ratio: 99.99%
+
+-- SORT --
+TLB_SIZE = 4
+[e] 'Exit': Hit fail 2640415.
+[e] 'Exit': Hit success 45119544.
+Hit ratio: 94.47%
+
+-- SORT --
+TLB_SIZE = 32
+[e] 'Exit': Hit fail 6182.
+[e] 'Exit': Hit success 44056912.
+Hit ratio: 99.99%
+
+-- SORT --
+TLB_SIZE = 64
+[e] 'Exit': Hit fail 40.
+[e] 'Exit': Hit success 44051502.
+Hit ratio: 99.99%
+
+¿Qué tamaño sugerirías para la TLB?
+Dada la escasa diferencia de hit ratio entre una TLB con 32 entradas y una con 64 entradas, sugeriría que se usen 32 entradas para la TLB, ya que
+sino estaríamos gastando el doble de espacio de un espacio de memoria importante y rápido sin ningún beneficio real como consecuencia.

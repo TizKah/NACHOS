@@ -45,6 +45,8 @@ MMU::MMU(unsigned aNumPhysPages)
     for (unsigned i = 0; i < TLB_SIZE; i++) {
         tlb[i].valid = false;
     }
+    hit_success = 0;
+    hit_fail = 0;
     pageTable = nullptr;
 #else  // Use linear page table.
     tlb = nullptr;
@@ -248,8 +250,10 @@ MMU::Translate(unsigned virtAddr, unsigned *physAddr,
     TranslationEntry *entry;
     ExceptionType exception = RetrievePageEntry(vpn, &entry);
     if (exception != NO_EXCEPTION) {
+        hit_fail++;
         return exception;
     }
+    hit_success++;
 
     if (entry->readOnly && writing) {  // Trying to write to a read-only
                                        // page.

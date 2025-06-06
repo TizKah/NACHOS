@@ -25,7 +25,7 @@ const unsigned DEFAULT_NUM_PHYS_PAGES = 32;
 /// Number of entries in the TLB, if one is present.
 ///
 /// If there is a TLB, it will be small compared to page tables.
-const unsigned TLB_SIZE = 4;
+const unsigned TLB_SIZE = 32;
 
 
 /// This class simulates an MMU (memory management unit) that can use either
@@ -78,7 +78,8 @@ public:
 
     TranslationEntry *pageTable;
     unsigned pageTableSize;
-
+    int hit_success;
+    int hit_fail;
 private:
 
     /// Retrieve a page entry either from a page table or the TLB.
